@@ -14,6 +14,8 @@
 
     .media-list {
       overflow: auto;
+      overflow-y: scroll;
+      height:470px;
     }
   </style>
   </head>
@@ -26,7 +28,7 @@
         <ul class="menu">
           <li><a href="{{ url_for('home') }}">Home</a></li>
           {% if 'email' in session %}
-          <li><a href="{{ url_for('chat') }}">Profile</a></li>
+          <li><a href="{{ url_for('chat') }}">Chat</a></li>
           <li><a href="{{ url_for('signout') }}">Sign Out</a></li>
           {% else %}
           <li><a href="{{ url_for('signup') }}">Sign Up</a></li>

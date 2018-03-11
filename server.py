@@ -2,7 +2,7 @@ from gevent import monkey
 monkey.patch_all()
 
 from flask import Flask, render_template, session, request
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import ContactForm, SignupForm, SigninForm
 from models import db, User
@@ -43,6 +43,8 @@ def chat():
 def signup():
 	form = SignupForm()
 
+	session['room'] = 'General'
+
 	if 'email' in session:
 		return redirect(url_for('chat')) 
 	
@@ -63,6 +65,8 @@ def signup():
 def signin():
 	form = SigninForm()
 
+	session['room'] = 'General'
+
 	if 'email' in session:
 		return redirect(url_for('chat')) 
 
@@ -82,16 +86,31 @@ def signout():
 		return redirect(url_for('signin'))
 
 	session.pop('email', None)
+	session.pop('room', None)
 	return redirect(url_for('signin'))
+
+@socketio.on('joined', namespace='/chat')
+def joined(message):
+	room = session.get('room')
+	join_room(room)
+	print(session.get('email'))
+	print('has joined')
+	emit('status', {'msg': session.get('email') + ' has entered the room.'}, room=room)
 
 @socketio.on('message', namespace='/chat')
 def chat_message(message):
 	print("message = ", message)
-	emit('message', {'data': message['data']}, broadcast=True)
+	print(message['data']['message'])
+	print(session.get('email'))
+	room = session.get('room')
+	emit('message', {'msg': session.get('email') + ':' + message['data']['message']}, room=room)
 
-@socketio.on('connect', namespace='/chat')
-def test_connect():
-	emit('my response', {'data': 'Connected', 'count': 0})
+#not yet implemented
+@socketio.on('left', namespace='/chat')
+def left(message):
+    room = session.get('room')
+    leave_room(room)
+    emit('status', {'msg': session.get('email') + ' has left the room.'}, room=room)
 
 if __name__ == '__main__':
 	socketio.run(app)

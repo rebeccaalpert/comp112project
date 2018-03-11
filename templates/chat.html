@@ -8,7 +8,7 @@
             <strong><span class="glyphicon glyphicon-list"></span> Chat History</strong>
           </div>
           <div class="panel-body fixed-panel">
-            <ul class="media-list">
+            <ul class="media-list" id="chat">
             </ul>
           </div>
           <div class="panel-footer">
@@ -24,52 +24,53 @@
     </div>
   </div>
 <script>
-  $( document ).ready(function() {
+  $(document).ready(function() {
     var channel = "/chat";
     var socket = io.connect('http://' + document.domain + ':' + location.port + channel);
     var receivedMsg;
 
     socket.on('connect', function () {
-      socket.emit('my_connection', { data: 'I\'m connected!' });
+      socket.emit('joined', {});
     });
 
-    socket.on('disconnect', function(){
-      console.log("chat disconnected");
+    socket.on('status', function(data) {
+      console.log(data);
+      $('#chat').append('<li>' + data.msg + '\n');
+    });
+    
+    socket.on('message', function(data) {
+      receivedMsg = data;
+      console.log(receivedMsg);
+      console.log(receivedMsg.msg);
+      $('#chat').append('<li>' + data.msg + '\n');
+    });
+    
+    $('#messageText').keypress(function(e) {
+      var code = e.keyCode || e.which;
+      if (code == 13) {
+        text = $('#messageText').val();
+        sendMessage();
+        $('#messageText').val('');
+      }
     });
 
-    socket.on("message", function (message) {
-      receivedMsg = message;
-      refreshMessages(message);
+    $("#sendMessage").on("click", function () {
+        sendMessage();
     });
 
-    function refreshMessages(message) {
-      $(".media-list").append('<li class="media"><div class="media-body"><div class="media"><div class="media-body">'
-        + message.data.message + '<br/><small class="text-muted">' + message.data.author + '</small><hr/></div></div></div></li>');
-    }
-
-    $(function () {
-
-      $("#sendMessage").on("click", function () {
-          sendMessage()
-      });
-
-      $('#messageText').keyup(function (e) {
-        if (e.keyCode == 13) {
-          sendMessage();
-        }
-      });
-
-      function sendMessage() {
+    function sendMessage() {
         $container = $('.media-list');
         $container[0].scrollTop = $container[0].scrollHeight;
-        var message = $("#messageText").val();
-        //var author = $.cookie("realtime-chat-nickname");
-        socket.emit('message', { data: { message: message/*, author: author*/ } });
+        var text = $("#messageText").val();
+        socket.emit('message', { data: { message: text} });
         $("#messageText").val("");
-        $container.animate({ scrollTop: $container[0].scrollHeight }, "slow");
       }
-    })
   });
+  
+    /*function refreshMessages(message) {
+      $(".media-list").append('<li class="media"><div class="media-body"><div class="media"><div class="media-body">'
+        + message.data.message + '<br/><small class="text-muted">' + message.data.author + '</small><hr/></div></div></div></li>');
+    }*/
   </script>
 
 {% endblock %}
