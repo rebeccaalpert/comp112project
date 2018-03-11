@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <div class="container">
+      <div class="col-md-12">
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <strong><span class="glyphicon glyphicon-list"></span> Chat History</strong>
+          </div>
+          <div class="panel-body fixed-panel">
+            <ul class="media-list">
+            </ul>
+          </div>
+          <div class="panel-footer">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Enter Message" id="messageText" autofocus/>
+              <span class="input-group-btn">
+                <button class="btn btn-info" type="button" id="sendMessage">SEND <span class="glyphicon glyphicon-send"></span></button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+  $( document ).ready(function() {
+    var channel = "/chat";
+    var socket = io.connect('http://' + document.domain + ':' + location.port + channel);
+    var receivedMsg;
+
+    socket.on('connect', function () {
+      socket.emit('my_connection', { data: 'I\'m connected!' });
+    });
+
+    socket.on('disconnect', function(){
+      console.log("chat disconnected");
+    });
+
+    socket.on("message", function (message) {
+      receivedMsg = message;
+      refreshMessages(message);
+    });
+
+    function refreshMessages(message) {
+      $(".media-list").append('<li class="media"><div class="media-body"><div class="media"><div class="media-body">'
+        + message.data.message + '<br/><small class="text-muted">' + message.data.author + '</small><hr/></div></div></div></li>');
+    }
+
+    $(function () {
+
+      $("#sendMessage").on("click", function () {
+          sendMessage()
+      });
+
+      $('#messageText').keyup(function (e) {
+        if (e.keyCode == 13) {
+          sendMessage();
+        }
+      });
+
+      function sendMessage() {
+        $container = $('.media-list');
+        $container[0].scrollTop = $container[0].scrollHeight;
+        var message = $("#messageText").val();
+        //var author = $.cookie("realtime-chat-nickname");
+        socket.emit('message', { data: { message: message/*, author: author*/ } });
+        $("#messageText").val("");
+        $container.animate({ scrollTop: $container[0].scrollHeight }, "slow");
+      }
+    })
+  });
+  </script>
+
+{% endblock %}
