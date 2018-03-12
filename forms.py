@@ -1,13 +1,24 @@
 from flask_wtf import Form
 from wtforms import TextField, TextAreaField, SubmitField, validators, ValidationError, PasswordField
-from models import db, User
+from models import db, User, Topic
 
-class ContactForm(Form):
-  name = TextField("Name",  [validators.Required("Please enter your name.")])
-  email = TextField("Email",  [validators.Required("Please enter your email address."), validators.Email("Please enter your email address.")])
-  subject = TextField("Subject",  [validators.Required("Please enter a subject.")])
-  message = TextAreaField("Message",  [validators.Required("Please enter a message.")])
-  submit = SubmitField("Send")
+class TopicForm(Form):
+  topicname = TextField("Chatroom Topic",  [validators.Required("Please enter a topic name.")])
+  submit = SubmitField("Create chatroom")
+
+  def __init__(self, *args, **kwargs):
+    Form.__init__(self, *args, **kwargs)
+
+  def validate(self):
+    if not Form.validate(self):
+      return False
+    
+    topic = Topic.query.filter_by(topicname = self.topicname.data.lower()).first()
+    if topic:
+      self.topicname.errors.append("That topic name is already taken")
+      return False
+    else:
+      return True
 
 class SignupForm(Form):
   firstname = TextField("First name",  [validators.Required("Please enter your first name.")])

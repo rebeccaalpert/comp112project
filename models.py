@@ -22,3 +22,14 @@ class User(db.Model):
   
   def check_password(self, password):
     return check_password_hash(self.pwdhash, password)
+
+class Topic(db.Model):
+  __tablename__ = 'topics'
+  uid = db.Column(db.Integer, primary_key = True)
+  topicname = db.Column(db.String(100), unique=True)
+
+  def __init__(self, topicname):
+    self.topicname = topicname.lower();
+
+  def check_topic(self):
+    return self.topicname

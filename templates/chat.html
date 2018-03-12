@@ -3,7 +3,30 @@
 {% block content %}
   <div class="container">
       <div class="col-md-12">
-        <div class="panel panel-info">
+        <div class="col-md-3">
+          <h4>Available Chatrooms</h4>
+          <ul id="chat-rooms">
+            {% for topic in topics %}
+              {% if topic.topicname %}
+                <li class="topic"><a href="#{{ topic.topicname }}">{{ topic.topicname }}</a></li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+          <h4>Add a Chatroom</h4>
+          {% for message in form.topicname.errors %}
+          <div class="flash">{{ message }}</div>
+          {% endfor %}
+  
+          <form action="{{ url_for('chat') }}" method="post">
+            {{ form.hidden_tag() }}
+            
+            {{ form.topicname.label }}
+            {{ form.topicname }}
+            
+            {{ form.submit }}
+          </form>
+        </div>
+        <div class="panel panel-info col-md-9">
           <div class="panel-heading">
             <strong><span class="glyphicon glyphicon-list"></span> Chat History</strong>
           </div>
@@ -30,7 +53,7 @@
     var receivedMsg;
 
     socket.on('connect', function () {
-      socket.emit('joined', {});
+      socket.emit('joined', { data: { room: 'General' } });
     });
 
     socket.on('status', function(data) {
@@ -58,11 +81,23 @@
         sendMessage();
     });
 
+    $(".topic a").on("click", function() {
+      var chatroom = $(this)[0].innerText;
+      console.log(chatroom);
+      clearMessages();
+      socket.emit('left', {});
+      socket.emit('joined', { data: { room: chatroom } });
+    });
+
+    function clearMessages() {
+      $('.media-list li').detach();
+    }
+
     function sendMessage() {
         $container = $('.media-list');
         $container[0].scrollTop = $container[0].scrollHeight;
         var text = $("#messageText").val();
-        socket.emit('message', { data: { message: text} });
+        socket.emit('message', { data: { message: text } });
         $("#messageText").val("");
       }
   });
