@@ -97,9 +97,13 @@
         sendMessage();
     });
 
+    $('#submit').on("click", function() {
+      clearMessages();
+      socket.emit('left', {});
+    });
+
     $(".topic a").on("click", function() {
       var chatroom = $(this)[0].innerText;
-      console.log(chatroom);
       clearMessages();
       socket.emit('left', {});
       $('#chatroom-name').text(chatroom);
