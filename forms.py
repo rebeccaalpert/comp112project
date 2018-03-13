@@ -3,8 +3,8 @@ from wtforms import TextField, TextAreaField, SubmitField, validators, Validatio
 from models import db, User, Topic
 
 class TopicForm(Form):
-  topicname = TextField("Chatroom Topic",  [validators.Required("Please enter a topic name.")])
-  submit = SubmitField("Create chatroom")
+  topicname = TextField("Topic",  [validators.Required("Please enter a topic name.")])
+  submit = SubmitField("CREATE CHATROOM")
 
   def __init__(self, *args, **kwargs):
     Form.__init__(self, *args, **kwargs)

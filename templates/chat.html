@@ -2,52 +2,68 @@
 
 {% block content %}
   <div class="container">
+    <div class="row">
       <div class="col-md-12">
         <div class="col-md-3">
-          <h4>Available Chatrooms</h4>
-          <ul id="chat-rooms">
-            {% for topic in topics %}
-              {% if topic.topicname %}
-                <li class="topic"><a href="#{{ topic.topicname }}">{{ topic.topicname }}</a></li>
-              {% endif %}
-            {% endfor %}
-          </ul>
-          <h4>Add a Chatroom</h4>
-          {% for message in form.topicname.errors %}
-          <div class="flash">{{ message }}</div>
-          {% endfor %}
-  
-          <form action="{{ url_for('chat') }}" method="post">
-            {{ form.hidden_tag() }}
-            
-            {{ form.topicname.label }}
-            {{ form.topicname }}
-            
-            {{ form.submit }}
-          </form>
-        </div>
-        <div class="panel panel-info col-md-9">
-          <div class="panel-heading">
-            <strong><span class="glyphicon glyphicon-list"></span> Chat History</strong>
-          </div>
-          <div class="panel-body fixed-panel">
-            <ul class="media-list" id="chat">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong>Available Chatrooms</strong>
+            </div>
+            <ul id="chat-rooms">
+              {% for topic in topics %}
+                {% if topic.topicname %}
+                  <li class="topic"><a href="#{{ topic.topicname }}">{{ topic.topicname }}</a></li>
+                {% endif %}
+              {% endfor %}
             </ul>
           </div>
-          <div class="panel-footer">
-            <div class="input-group">
-              <input type="text" class="form-control" placeholder="Enter Message" id="messageText" autofocus/>
-              <span class="input-group-btn">
-                <button class="btn btn-info" type="button" id="sendMessage">SEND <span class="glyphicon glyphicon-send"></span></button>
-              </span>
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong>Add a Chatroom</strong>
+            </div>
+            <div class="container-fluid">
+              {% for message in form.topicname.errors %}
+              <div class="flash">{{ message }}</div>
+              {% endfor %}
+      
+              <form id="submit-topic" action="{{ url_for('chat') }}" method="post">
+                {{ form.hidden_tag() }}
+                
+                {{ form.topicname.label }}
+                {{ form.topicname }}
+                
+                {{ form.submit }}
+              </form>
             </div>
           </div>
         </div>
+        <div class="col-md-9">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong><span class="glyphicon glyphicon-list"></span> Current Chatroom: <span id="chatroom-name">General </strong>
+            </div>
+            <div class="panel-body fixed-panel">
+              <ul class="media-list" id="chat">
+              </ul>
+            </div>
+            <div class="panel-footer">
+              <div class="input-group">
+                <input type="text" class="form-control" placeholder="Enter Message" id="messageText" autofocus/>
+                <span class="input-group-btn">
+                  <button class="btn btn-info" type="button" id="sendMessage">SEND <span class="glyphicon glyphicon-send"></span></button>
+                </span>
+              </div>
+            </div>
+        </div>
+      </div>
       </div>
     </div>
   </div>
+</div>
 <script>
   $(document).ready(function() {
+    $('#submit').addClass('btn').addClass('btn-info').css('margin-top', '1em');
+    $('#topicname').addClass('form-control');
     var channel = "/chat";
     var socket = io.connect('http://' + document.domain + ':' + location.port + channel);
     var receivedMsg;
@@ -86,6 +102,7 @@
       console.log(chatroom);
       clearMessages();
       socket.emit('left', {});
+      $('#chatroom-name').text(chatroom);
       socket.emit('joined', { data: { room: chatroom } });
     });
 
