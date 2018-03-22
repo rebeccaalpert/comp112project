@@ -65,7 +65,7 @@ def chat():
 				db.session.add(newtopic)
 				db.session.commit()
 				session['topic'] = newtopic.topicname
-				return redirect(url_for('chat'))
+				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
 			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
@@ -101,7 +101,7 @@ def show_chatroom(chatroom_title):
 				db.session.add(newtopic)
 				db.session.commit()
 				session['topic'] = newtopic.topicname
-				return redirect(url_for('chat'))
+				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
 			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
