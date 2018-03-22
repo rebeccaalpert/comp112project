@@ -7,6 +7,16 @@
         <div class="col-md-3">
           <div class="panel panel-info">
             <div class="panel-heading">
+              <strong>Active Users</strong>
+            </div>
+            <ul id="active-users">
+              {% for user in users %}
+                  <li class="user"><a href="#{{ user.email }}">{{ user.email }}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="panel panel-info">
+            <div class="panel-heading">
               <strong>Available Chatrooms</strong>
             </div>
             <ul id="chat-rooms">

@@ -21,9 +21,11 @@ db.init_app(app)
 @app.before_first_request
 def initialize_database():
 	db.create_all()
-	t = Topic('General', None)
-	db.session.add(t)
-	db.session.commit()
+	missing = Topic.query.filter_by(topicname = 'General').first()
+	if missing is None:
+		t = Topic('General', None)
+		db.session.add(t)
+		db.session.commit()
 
 @app.route('/')
 def home():
@@ -40,6 +42,7 @@ def testdb():
 def chat():
 	form = TopicForm()
 	topics = Topic.query.all()
+	users = User.query.all()
 
 	if 'email' not in session:
 		return redirect(url_for('signin'))
@@ -51,7 +54,7 @@ def chat():
 	else:
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('chat.html', form=form, topics=topics)
+				return render_template('chat.html', form=form, topics=topics, users=users)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -61,7 +64,7 @@ def chat():
 				return redirect(url_for('chat'))
 		
 		if request.method == 'GET':
-			return render_template('chat.html', form=form, topics=topics)
+			return render_template('chat.html', form=form, topics=topics, users=users)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
