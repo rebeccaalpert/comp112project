@@ -40,9 +40,13 @@ class Message(db.Model):
   text = db.Column(db.String(4096))
   posted = db.Column(db.DateTime, default = datetime.now)
   user_id = db.Column(db.Integer, db.ForeignKey(User.uid))
+  user_email = db.Column(db.String(128))
   topic_id = db.Column(db.Integer, db.ForeignKey(Topic.uid))
+  topic_name = db.Column(db.String(100))
 
-  def __init__(self, text, user_id, topic_id):
+  def __init__(self, text, user_id, user_email, topic_id, topic):
     self.text = text
     self.user_id = user_id
+    self.user_email = user_email
     self.topic_id = topic_id
+    self.topic_name = topic

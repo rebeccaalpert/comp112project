@@ -43,6 +43,9 @@ def chat():
 	form = TopicForm()
 	topics = Topic.query.all()
 	users = User.query.all()
+	messages = Message.query.all()
+
+	session['room'] = 'General'
 
 	if 'email' not in session:
 		return redirect(url_for('signin'))
@@ -54,7 +57,7 @@ def chat():
 	else:
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('chat.html', form=form, topics=topics, users=users)
+				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -64,7 +67,38 @@ def chat():
 				return redirect(url_for('chat'))
 		
 		if request.method == 'GET':
-			return render_template('chat.html', form=form, topics=topics, users=users)
+			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+
+@app.route('/chat/<chatroom_title>')
+def show_chatroom(chatroom_title):
+	form = TopicForm()
+	topics = Topic.query.all()
+	users = User.query.all()
+	messages = Message.query.all()
+
+	session['room'] = chatroom_title
+
+	if 'email' not in session:
+		return redirect(url_for('signin'))
+
+	user = User.query.filter_by(email = session['email']).first()
+
+	if user is None:
+		return redirect(url_for('signin'))
+	else:
+		if request.method == 'POST':
+			if form.validate() == False:
+				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+			else:
+				uid = user.uid
+				newtopic = Topic(form.topicname.data, uid)
+				db.session.add(newtopic)
+				db.session.commit()
+				session['topic'] = newtopic.topicname
+				return redirect(url_for('chat'))
+		
+		if request.method == 'GET':
+			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -135,8 +169,14 @@ def chat_message(message):
 	emit('message', {'msg': session.get('email') + ':' + message['data']['message']}, room=room)
 	user = User.query.filter_by(email=email).first()
 	uid = user.uid
+	username = user.email
+	print(username)
 	room = Topic.query.filter_by(topicname=room).first()
-	message = Message(message['data']['message'], uid, room.uid)
+	room_uid = room.uid
+	print(room_uid)
+	room_name = room.topicname
+	print(room_name)
+	message = Message(message['data']['message'], uid, username, room_uid, room_name)
 	db.session.add(message)
 	db.session.commit()
 
