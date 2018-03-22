@@ -6,6 +6,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm
 from models import db, User, Topic, Message
+import datetime
 
 app = Flask(__name__)
 app.debug = True
@@ -166,16 +167,13 @@ def chat_message(message):
 	print(message['data']['message'])
 	email = session.get('email')
 	room = session.get('room')
-	emit('message', {'msg': session.get('email') + ':' + message['data']['message']}, room=room)
+	emit('message', {'text': message['data']['message'], 'author': email, 'time': ' just now'}, room=room)
 	user = User.query.filter_by(email=email).first()
 	uid = user.uid
 	username = user.email
-	print(username)
 	room = Topic.query.filter_by(topicname=room).first()
 	room_uid = room.uid
-	print(room_uid)
 	room_name = room.topicname
-	print(room_name)
 	message = Message(message['data']['message'], uid, username, room_uid, room_name)
 	db.session.add(message)
 	db.session.commit()
