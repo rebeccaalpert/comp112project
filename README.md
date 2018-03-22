@@ -2,13 +2,16 @@
 
 To run, you will need to create a MySQL database. This application uses an unsecured database right now (created as root with no password on localhost).
 
-On the MySQL command line interface, type "CREATE DATABASE development;" and then create a table by typing the following: CREATE TABLE users (uid INT NOT NULL PRIMARY KEY AUTO_INCREMENT, firstname VARCHAR(100) NOT NULL, lastname VARCHAR(100) NOT NULL, email VARCHAR(120) NOT NULL UNIQUE, pwdhash VARCHAR(100) NOT NULL);  
+I updated the program to automatically create the tables needed. There is currently a bug where if you try to run the server multiple times, it will yell at you because the "General" chatroom is in there twice. To get around it until I fix it, just open the MySQL database and type: DROP TABLE message; DROP TABLE topic;  
 
-You will also need to create a table for topics as follows: CREATE TABLE topics (uid INT NOT NULL PRIMARY KEY AUTO_INCREMENT, topicname VARCHAR(100) NOT NULL UNIQUE);  
+Then try running the server again. You can test to make sure your database is working by going to http://localhost:5000/testdb. 
 
-Provision the topics table with a starter value, General, as follows: INSERT INTO topics (uid, topicname) VALUES ('0', 'General');  
-
-You can test to make sure your database is working by going to http://localhost:5000/testdb. 
+New features: 
+* When new chatrooms are added, sockets are used to update the list of available chatrooms for everyone
+* Topics are stored in the database and are used to populate the list of available chatrooms on refresh
+* Users are stored in the database, but I haven't implemented a list of active users yet
+* Messages are also stored in the database, but I haven't implemented "back messages" from before you joined the chatroom yet
+* There are one-to-many relationships between users and topics, users and messages, and topics and messages. I will use these relationships for showing "back messages"
 
 To run the program:
 * source venv/bin/activate

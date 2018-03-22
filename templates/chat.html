@@ -81,7 +81,11 @@
       receivedMsg = data;
       console.log(receivedMsg);
       console.log(receivedMsg.msg);
-      $('#chat').append('<li>' + data.msg + '\n');
+      $('#chat').append('<li>' + data.msg + '\n</li>');
+    });
+
+    socket.on('update_topics', function(data) {
+      $('#chat-rooms').append('<li class="topic"><a href="#' + titleCase(data.msg.room) + '">' + titleCase(data.msg.room) + '</a></li>');
     });
     
     $('#messageText').keypress(function(e) {
@@ -98,11 +102,15 @@
     });
 
     $('#submit').on("click", function() {
+      var name = $("#topicname").val();
+      console.log(name);
+      socket.emit('new_topic', { data: { room: name } });
       clearMessages();
       socket.emit('left', {});
     });
 
-    $(".topic a").on("click", function() {
+
+    $('#chat-rooms').on( 'click', 'a', function () {
       var chatroom = $(this)[0].innerText;
       clearMessages();
       socket.emit('left', {});
@@ -120,6 +128,14 @@
         var text = $("#messageText").val();
         socket.emit('message', { data: { message: text } });
         $("#messageText").val("");
+      }
+
+      function titleCase(str) {
+        str = str.toLowerCase().split(' ');
+        for (var i = 0; i < str.length; i++) {
+          str[i] = str[i].charAt(0).toUpperCase() + str[i].slice(1); 
+        }
+        return str.join(' ');
       }
   });
   

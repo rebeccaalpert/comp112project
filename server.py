@@ -5,7 +5,7 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm
-from models import db, User, Topic
+from models import db, User, Topic, Message
 
 app = Flask(__name__)
 app.debug = True
@@ -13,8 +13,17 @@ app.config['SECRET_KEY'] = 'nuttertools'
 socketio = SocketIO(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/development'
 
-from models import db
 db.init_app(app)
+
+#from models import db
+#db.init_app(app)
+
+@app.before_first_request
+def initialize_database():
+	db.create_all()
+	t = Topic('General', None)
+	db.session.add(t)
+	db.session.commit()
 
 @app.route('/')
 def home():
@@ -44,7 +53,8 @@ def chat():
 			if form.validate() == False:
 				return render_template('chat.html', form=form, topics=topics)
 			else:
-				newtopic = Topic(form.topicname.data)
+				uid = user.uid
+				newtopic = Topic(form.topicname.data, uid)
 				db.session.add(newtopic)
 				db.session.commit()
 				session['topic'] = newtopic.topicname
@@ -66,7 +76,7 @@ def signup():
 		if form.validate() == False:
 			return render_template('signup.html', form=form)
 		else:
-			newuser = User(form.firstname.data, form.lastname.data, form.email.data, form.password.data)
+			newuser = User(form.firstname.data, form.lastname.data, form.email.data, form.password.data, None, None)
 			db.session.add(newuser)
 			db.session.commit()
 			session['email'] = newuser.email
@@ -117,11 +127,16 @@ def joined(message):
 def chat_message(message):
 	print("message = ", message)
 	print(message['data']['message'])
-	print(session.get('email'))
+	email = session.get('email')
 	room = session.get('room')
 	emit('message', {'msg': session.get('email') + ':' + message['data']['message']}, room=room)
+	user = User.query.filter_by(email=email).first()
+	uid = user.uid
+	room = Topic.query.filter_by(topicname=room).first()
+	message = Message(message['data']['message'], uid, room.uid)
+	db.session.add(message)
+	db.session.commit()
 
-# not currently implemented
 @socketio.on('left', namespace='/chat')
 def left(message):
     room = session.get('room')
@@ -130,6 +145,13 @@ def left(message):
     print('left room')
     emit('status', {'msg': session.get('email') + ' has left ' + room + '.'}, room=room)
     session.pop('room', None)
+
+@socketio.on('new_topic', namespace='/chat')
+def new_topic(message):
+	print("New topic\n")
+	print(message)
+	print(message['data']['room'])
+	emit('update_topics', {'msg': { 'room': message['data']['room'] }}, broadcast=True)
 
 if __name__ == '__main__':
 	socketio.run(app)
