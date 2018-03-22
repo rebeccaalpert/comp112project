@@ -77,7 +77,12 @@ def show_chatroom(chatroom_title):
 	users = User.query.all()
 	messages = Message.query.all()
 
-	session['room'] = chatroom_title
+	topic = Topic.query.filter_by(topicname = chatroom_title).first()
+
+	if topic is None:
+		return redirect(url_for('chat'))
+
+	session['room'] = topic.topicname
 
 	if 'email' not in session:
 		return redirect(url_for('signin'))

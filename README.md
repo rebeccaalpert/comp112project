@@ -11,9 +11,9 @@ New features:
 * When new chatrooms are added, sockets are used to update the list of available chatrooms for everyone until they refresh
 * Messages are stored in the database and users are shown prior messages when they navigate to a channel
 * Users are stored in the database, but I haven't implemented a list of active users yet (the current Active Users box is a lie)
+* If a user tries to access a chatroom that doesn't exist, they're redirected to the general chatroom
 
 To do:
-* Edit message socket data handling to match stored message handling
 * List of active users
 * Redirect to new chatroom when chatroom added
 
