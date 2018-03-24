@@ -50,3 +50,19 @@ class Message(db.Model):
     self.user_email = user_email
     self.topic_id = topic_id
     self.topic_name = topic
+
+class PrivateMessage(db.Model):
+  uid = db.Column(db.Integer, primary_key = True)
+  text = db.Column(db.String(4096))
+  posted = db.Column(db.DateTime, default = datetime.now)
+  sender_id = db.Column(db.Integer, db.ForeignKey(User.uid))
+  sender_email = db.Column(db.String(128))
+  receiver_id = db.Column(db.Integer, db.ForeignKey(User.uid))
+  receiver_email = db.Column(db.String(128))
+
+  def __init__(self, text, sender_id, sender_email, receiver_id, receiver_email):
+    self.text = text
+    self.sender_id = sender_id
+    self.sender_email = sender_email
+    self.receiver_id = receiver_id
+    self.receiver_email = receiver_email

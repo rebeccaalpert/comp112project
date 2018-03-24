@@ -58,13 +58,14 @@
         <div class="col-md-9">
           <div class="panel panel-info">
             <div class="panel-heading">
-              <strong><span class="glyphicon glyphicon-list"></span> Current Chatroom: <span id="chatroom-name">{{ session['room'] }}</strong>
+              <strong><span class="glyphicon glyphicon-list"></span> Privately chatting with: <span id="chatroom-name">{{ session['room'] }}</strong>
             </div>
             <div class="panel-body fixed-panel">
               <ul class="media-list" id="chat">
                 {% for message in messages %}
-                {% if message.topic_name == session['room'] %}
-                  <li class="message">{{ message.text }}<br />posted by {{ message.user_email }} at {{ message.posted }}</li>
+                {% if message.sender_email == session['email'] or 
+                    message.receiver_email == session['email'] %}
+                  <li class="message">{{ message.text }}<br />posted by {{ message.sender_email }} at {{ message.posted }}</li>
                 {% endif %}
               {% endfor %}
               </ul>
@@ -87,24 +88,23 @@
   $(document).ready(function() {
     $('#submit').addClass('btn').addClass('btn-info').css('margin-top', '1em');
     $('#topicname').addClass('form-control');
-    var channel = "/chat";
+    var channel = "/private_chat";
     var socket = io.connect('http://' + document.domain + ':' + location.port + channel);
     var receivedMsg;
 
     var room = $("#chatroom-name").text()
 
     socket.on('connect', function () {
-      socket.emit('joined', { data: { room: room } });
+      socket.emit('private_joined', { data: { room: room } });
     });
 
-    socket.on('status', function(data) {
+    socket.on('private_status', function(data) {
       console.log(data);
       $('#chat').append('<li class="message">' + data.msg + '\n');
     });
     
-    socket.on('message', function(data) {
-      receivedMsg = data;
-      console.log(receivedMsg);
+    socket.on('private_message', function(data) {
+      console.log(data);
       $('#chat').append('<li class="message">' + data.text + '<br />' + 'posted by ' + data.author + data.time + '</li>');
     });
 
@@ -130,14 +130,14 @@
       console.log(name);
       socket.emit('new_topic', { data: { room: name } });
       clearMessages();
-      socket.emit('left', {});
+      socket.emit('private_left', {});
     });
 
     $('#chat-rooms').on( 'click', 'a', function () {
       var chatroom = $(this)[0].innerText;
       clearMessages();
-      socket.emit('left', {});
-      socket.emit('joined', { data: { room: chatroom } });
+      socket.emit('private_left', {});
+      socket.emit('private_joined', { data: { room: chatroom } });
     });
 
     function clearMessages() {
@@ -148,7 +148,7 @@
       $container = $('.media-list');
       $container[0].scrollTop = $container[0].scrollHeight;
       var text = $("#messageText").val();
-      socket.emit('message', { data: { message: text } });
+      socket.emit('private_message', { data: { message: text } });
       $("#messageText").val("");
     }
 
