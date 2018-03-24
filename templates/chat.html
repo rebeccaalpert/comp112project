@@ -7,11 +7,19 @@
         <div class="col-md-3">
           <div class="panel panel-info">
             <div class="panel-heading">
+              <strong><span class="glyphicon glyphicon-list"></span> Logged in as: <span id="user-name">{{ session['email'] }}</strong>
+            </div>
+          </div>
+          <div class="panel panel-info">
+            <div class="panel-heading">
               <strong>Active Users</strong>
             </div>
             <ul id="active-users">
               {% for user in users %}
-                  <li class="user"><a href="#{{ user.email }}">{{ user.email }}</a></li>
+                {% if user.email != session['email'] %}
+                  <li class="user"><a href="/private_chat/{{ user.email }}">
+                  {{ user.email }}</a></li>
+                {% endif %}
               {% endfor %}
             </ul>
           </div>

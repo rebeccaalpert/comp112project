@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'nuttertools'
 socketio = SocketIO(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/development'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/development'
 
 db.init_app(app)
 
@@ -105,6 +105,43 @@ def show_chatroom(chatroom_title):
 		
 		if request.method == 'GET':
 			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+
+@app.route('/private_chat/<username>')
+def private_chat(username):
+	form = TopicForm()
+	topics = Topic.query.all()
+	users = User.query.all()
+	messages = Message.query.all()
+
+	chat_partner = User.query.filter_by(email = username).first()
+
+	if chat_partner is None:
+		return redirect(url_for('chat'))
+
+	session['room'] = chat_partner.email
+
+	if 'email' not in session:
+		return redirect(url_for('signin'))
+
+	user = User.query.filter_by(email = session['email']).first()
+
+	if user is None:
+		return redirect(url_for('signin'))
+	else:
+		if request.method == 'POST':
+			if form.validate() == False:
+				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+			else:
+				uid = user.uid
+				newtopic = Topic(form.topicname.data, uid)
+				db.session.add(newtopic)
+				db.session.commit()
+				session['topic'] = newtopic.topicname
+				return redirect('/chat/' + newtopic.topicname)
+		
+		if request.method == 'GET':
+			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
