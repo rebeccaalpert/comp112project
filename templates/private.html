@@ -58,13 +58,16 @@
         <div class="col-md-9">
           <div class="panel panel-info">
             <div class="panel-heading">
-              <strong><span class="glyphicon glyphicon-list"></span> Privately chatting with: <span id="chatroom-name">{{ session['room'] }}</strong>
+              <strong><span class="glyphicon glyphicon-list"></span> Privately chatting with: <span id="chatroom-name">{{ session['private'] }}</strong>
+              <span id="room-id">{{ session['room'] }}
             </div>
             <div class="panel-body fixed-panel">
               <ul class="media-list" id="chat">
                 {% for message in messages %}
-                {% if message.sender_email == session['email'] or 
-                    message.receiver_email == session['email'] %}
+                {% if (message.sender_email == session['private'] and 
+                    message.receiver_email == session['email'])
+                    or (message.sender_email == session['email'] and 
+                    message.receiver_email == session['private']) %}
                   <li class="message">{{ message.text }}<br />posted by {{ message.sender_email }} at {{ message.posted }}</li>
                 {% endif %}
               {% endfor %}
@@ -92,7 +95,9 @@
     var socket = io.connect('http://' + document.domain + ':' + location.port + channel);
     var receivedMsg;
 
-    var room = $("#chatroom-name").text()
+    var room = $("#room-id").text();
+
+    $("#room-id").hide();
 
     socket.on('connect', function () {
       socket.emit('private_joined', { data: { room: room } });
@@ -138,6 +143,12 @@
       clearMessages();
       socket.emit('private_left', {});
       socket.emit('private_joined', { data: { room: chatroom } });
+    });
+
+    $('#active-users').on( 'click', 'a', function () {
+      clearMessages();
+      socket.emit('private_left', {});
+      // socket.emit('private_joined', { data: { room: chatroom } });
     });
 
     function clearMessages() {

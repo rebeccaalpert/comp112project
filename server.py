@@ -7,6 +7,7 @@ from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm
 from models import db, User, Topic, Message, PrivateMessage
 import datetime
+import math
 
 app = Flask(__name__)
 app.debug = True
@@ -106,6 +107,12 @@ def show_chatroom(chatroom_title):
 		if request.method == 'GET':
 			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
 
+def convertToNumber (s):
+    return int.from_bytes(s.encode(), 'little')
+
+def convertFromNumber (n):
+    return n.to_bytes(math.ceil(n.bit_length() / 8), 'little').decode()
+
 @app.route('/private_chat/<username>')
 def private_chat(username):
 	form = TopicForm()
@@ -118,7 +125,8 @@ def private_chat(username):
 	if chat_partner is None:
 		return redirect(url_for('chat'))
 
-	session['room'] = chat_partner.email
+	session['room'] = convertToNumber(chat_partner.email) + convertToNumber(session['email'])
+	session['private'] = chat_partner.email
 
 	if 'email' not in session:
 		return redirect(url_for('signin'))
@@ -130,7 +138,7 @@ def private_chat(username):
 	else:
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('private.html', form=form, topics=topics, users=users, messages=messages)
+				return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=chat_partner.email)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -140,7 +148,7 @@ def private_chat(username):
 				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
-			return render_template('private.html', form=form, topics=topics, users=users, messages=messages)
+			return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=chat_partner.email)
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -211,7 +219,7 @@ def joined(message):
 	join_room(room)
 	print(session.get('email'))
 	print('has joined')
-	emit('status', {'msg': session.get('email') + ' has entered ' + room + '.'}, room=room)
+	emit('private_status', {'msg': session.get('email') + ' is connected.'}, room=room)
 
 @socketio.on('message', namespace='/chat')
 def chat_message(message):
@@ -236,13 +244,13 @@ def private_message(message):
 	print(message['data']['message'])
 	email = session.get('email')
 	room = session.get('room')
+	receiver_email = session.get('private')
 	emit('private_message', {'text': message['data']['message'], 'author': email, 'time': ' just now'}, room=room)
 	sender = User.query.filter_by(email=email).first()
 	sender_id = sender.uid
 	sender_email = sender.email
-	receiver = User.query.filter_by(email=room).first()
+	receiver = User.query.filter_by(email=receiver_email).first()
 	receiver_id = receiver.uid
-	receiver_email = receiver.email
 	message = PrivateMessage(message['data']['message'], sender_id, sender_email, receiver_id, receiver_email)
 	db.session.add(message)
 	db.session.commit()
@@ -262,7 +270,7 @@ def left(message):
     leave_room(room)
     print(session.get('email'))
     print('left room')
-    emit('status', {'msg': session.get('email') + ' has left ' + room + '.'}, room=room)
+    emit('private_status', {'msg': session.get('email') + ' is offline.'}, room=room)
     session.pop('room', None)
 
 @socketio.on('new_topic', namespace='/chat')
