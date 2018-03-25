@@ -5,8 +5,9 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm
-from models import db, User, Topic, Message
+from models import db, User, Topic, Message, PrivateMessage
 import datetime
+import math
 
 app = Flask(__name__)
 app.debug = True
@@ -103,6 +104,50 @@ def show_chatroom(chatroom_title):
 		if request.method == 'GET':
 			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
 
+def convertToNumber (s):
+    return int.from_bytes(s.encode(), 'little')
+
+def convertFromNumber (n):
+    return n.to_bytes(math.ceil(n.bit_length() / 8), 'little').decode()
+
+@app.route('/private_chat/<username>')
+def private_chat(username):
+	form = TopicForm()
+	topics = Topic.query.all()
+	users = User.query.all()
+	messages = PrivateMessage.query.all()
+
+	chat_partner = User.query.filter_by(email = username).first()
+
+	if chat_partner is None:
+		return redirect(url_for('chat'))
+
+	session['room'] = convertToNumber(chat_partner.email) + convertToNumber(session['email'])
+	session['private'] = chat_partner.email
+
+	if 'email' not in session:
+		return redirect(url_for('signin'))
+
+	user = User.query.filter_by(email = session['email']).first()
+
+	if user is None:
+		return redirect(url_for('signin'))
+	else:
+		if request.method == 'POST':
+			if form.validate() == False:
+				return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=chat_partner.email)
+			else:
+				uid = user.uid
+				newtopic = Topic(form.topicname.data, uid)
+				db.session.add(newtopic)
+				db.session.commit()
+				session['topic'] = newtopic.topicname
+				return redirect('/chat/' + newtopic.topicname)
+		
+		if request.method == 'GET':
+			return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=chat_partner.email)
+
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
 	form = SignupForm()
@@ -168,6 +213,16 @@ def joined(message):
 	print(session['room'])
 	db.session.commit()
 
+@socketio.on('private_joined', namespace='/private_chat')
+def joined(message):
+	print('message =', message)
+	room = message['data']['room']
+	session['room'] = room
+	join_room(room)
+	print(session.get('email'))
+	print('has joined')
+	emit('private_status', {'msg': session.get('email') + ' is connected.'}, room=room)
+
 @socketio.on('message', namespace='/chat')
 def chat_message(message):
 	print("message = ", message)
@@ -179,9 +234,26 @@ def chat_message(message):
 	uid = user.uid
 	username = user.email
 	room = Topic.query.filter_by(topicname=room).first()
-	room_uid = room.uid
-	room_name = room.topicname
-	message = Message(message['data']['message'], uid, username, room_uid, room_name)
+	topic_uid = room.uid
+	topic_name = room.topicname
+	message = Message(message['data']['message'], uid, username, topic_uid, topic_name)
+	db.session.add(message)
+	db.session.commit()
+
+@socketio.on('private_message', namespace='/private_chat')
+def private_message(message):
+	print("message = ", message)
+	print(message['data']['message'])
+	email = session.get('email')
+	room = session.get('room')
+	receiver_email = session.get('private')
+	emit('private_message', {'text': message['data']['message'], 'author': email, 'time': ' just now'}, room=room)
+	sender = User.query.filter_by(email=email).first()
+	sender_id = sender.uid
+	sender_email = sender.email
+	receiver = User.query.filter_by(email=receiver_email).first()
+	receiver_id = receiver.uid
+	message = PrivateMessage(message['data']['message'], sender_id, sender_email, receiver_id, receiver_email)
 	db.session.add(message)
 	db.session.commit()
 
@@ -196,6 +268,15 @@ def left(message):
     session.pop('room', None)
     user.topic_name = None
     db.session.commit()
+
+@socketio.on('private_left', namespace='/private_chat')
+def left(message):
+    room = session.get('room')
+    leave_room(room)
+    print(session.get('email'))
+    print('left room')
+    emit('private_status', {'msg': session.get('email') + ' is offline.'}, room=room)
+    session.pop('room', None)
 
 @socketio.on('new_topic', namespace='/chat')
 def new_topic(message):

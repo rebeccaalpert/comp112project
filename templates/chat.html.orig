@@ -16,12 +16,11 @@
             </div>
             <ul id="active-users">
               {% for user in users %}
-                {% if user.topic_name == session['room'] %}
-                  {% if user.email != session['email'] %}
-                    <li class="user"><a href="/private_chat/{{ user.email }}">{{ user.email }}</a></li>
-                  {% else %}
-                    <li class="user">{{ user.email }}</li>
-                  {% endif %}
+                <!--{% if user.topic_name == session['room'] %}
+                  <li class="user">{{ user.email }}</li>-->
+                {% if user.email != session['email'] %}
+                  <li class="user"><a href="/private_chat/{{ user.email }}">
+                  {{ user.email }}</a></li>
                 {% endif %}
               {% endfor %}
             </ul>
@@ -107,12 +106,12 @@
 
     socket.on('status', function(data) {
       console.log(data);
-      $('#chat').append('<li class="message">' + data.msg + '</li>');
-      if (data.msg.includes("has entered") && $('.user:contains("' + data.user + '")').length == 0) {
-        $('#active-users').append('<li class="user">' + data.user + '</li>');
-      } else if (data.msg.includes("has left")) {
-        $('.user:contains("' + data.user + '")').remove();
-      }
+      //$('#chat').append('<li class="message">' + data.msg + '</li>');
+      //if (data.msg.includes("has entered") && $('.user:contains("' + data.user + '")').length == 0) {
+      //  $('#active-users').append('<li class="user">' + data.user + '</li>');
+      //} else if (data.msg.includes("has left")) {
+      //  $('.user:contains("' + data.user + '")').remove();
+      //}
       $('#chat').append('<li class="message">' + data.msg + '\n');
       $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
