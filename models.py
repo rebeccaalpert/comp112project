@@ -12,6 +12,7 @@ class User(db.Model):
   pwdhash = db.Column(db.String(128))
   topics = db.relationship('Topic', backref='User', lazy='dynamic')
   messages = db.relationship('Message', backref='User', lazy='dynamic')
+  topic_name = db.Column(db.String(100))
   
   def __init__(self, firstname, lastname, email, password, topics, messages):
     self.firstname = firstname.title()

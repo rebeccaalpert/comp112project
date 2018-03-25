@@ -1,5 +1,7 @@
 # Comp 112 Final Project
 
+This project is a topic-based chat server that multiple clients can connect to. The server forwards chat messages to clients in the appropriate chatrooms and stores messages in case users switch rooms. There is user authentication, and users can create new topic-based chatrooms.
+
 To run, you will need to create a MySQL database. This application uses an unsecured database right now (created as root with no password on localhost).
 
 I updated the program to automatically create the tables needed.

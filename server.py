@@ -16,9 +16,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/development'
 
 db.init_app(app)
 
-#from models import db
-#db.init_app(app)
-
 @app.before_first_request
 def initialize_database():
 	db.create_all()
@@ -164,7 +161,12 @@ def joined(message):
 	join_room(room)
 	print(session.get('email'))
 	print('has joined')
-	emit('status', {'msg': session.get('email') + ' has entered ' + room + '.'}, room=room)
+	emit('status', {'user': session.get('email'), 'msg': session.get('email') + ' has entered ' + room + '.'}, room=room)
+	user = User.query.filter_by(email=session.get('email')).first()
+	user.topic_name = room
+	print(user.topic_name)
+	print(session['room'])
+	db.session.commit()
 
 @socketio.on('message', namespace='/chat')
 def chat_message(message):
@@ -189,8 +191,11 @@ def left(message):
     leave_room(room)
     print(session.get('email'))
     print('left room')
-    emit('status', {'msg': session.get('email') + ' has left ' + room + '.'}, room=room)
+    emit('status', {'user': session.get('email'), 'msg': session.get('email') + ' has left ' + room + '.'}, room=room)
+    user = User.query.filter_by(email=session.get('email')).first()
     session.pop('room', None)
+    user.topic_name = None
+    db.session.commit()
 
 @socketio.on('new_topic', namespace='/chat')
 def new_topic(message):
