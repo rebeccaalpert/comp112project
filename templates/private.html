@@ -99,6 +99,8 @@
 
     $("#room-id").hide();
 
+    $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
+
     socket.on('connect', function () {
       socket.emit('private_joined', { data: { room: room } });
     });
@@ -106,11 +108,13 @@
     socket.on('private_status', function(data) {
       console.log(data);
       $('#chat').append('<li class="message">' + data.msg + '\n');
+      $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
     
     socket.on('private_message', function(data) {
       console.log(data);
       $('#chat').append('<li class="message">' + data.text + '<br />' + 'posted by ' + data.author + data.time + '</li>');
+      $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
 
     socket.on('update_topics', function(data) {
