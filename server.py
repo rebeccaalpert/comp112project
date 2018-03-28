@@ -5,7 +5,7 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm
-from models import db, User, Topic, Message, PrivateMessage
+from models import db, User, Topic, Message, PrivateMessage, Language
 import datetime
 import math
 
@@ -154,6 +154,10 @@ def signup():
 
 	session['room'] = 'General'
 
+	lang = Language.query.filter_by()
+	form.language.choices = [(g.uid, g.name) for g in Language.query.order_by('name')]
+	print form.language.choices
+
 	if 'email' in session:
 		return redirect(url_for('chat')) 
 	
@@ -161,7 +165,7 @@ def signup():
 		if form.validate() == False:
 			return render_template('signup.html', form=form)
 		else:
-			newuser = User(form.firstname.data, form.lastname.data, form.email.data, form.password.data, None, None)
+			newuser = User(form.firstname.data, form.lastname.data, form.email.data, form.password.data, None, None, form.language.data)
 			db.session.add(newuser)
 			db.session.commit()
 			session['email'] = newuser.email
@@ -197,6 +201,22 @@ def signout():
 	session.pop('email', None)
 	session.pop('room', None)
 	return redirect(url_for('signin'))
+
+
+@app.route('/user_language/<email>', methods=['GET', 'POST'])
+def resolveUserLanguage(email):
+	if 'email' not in session:
+		return redirect(url_for('signin'))
+
+	user = User.query.filter_by(email = email).first()
+
+	if user is None:
+		return redirect(url_for('signin'))
+	else:
+		lang = Language.query.filter_by(uid = user.lang).first()
+		if lang:
+			return lang.code
+		return "-1"
 
 @socketio.on('joined', namespace='/chat')
 def joined(message):

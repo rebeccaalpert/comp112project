@@ -4,6 +4,15 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+class Language(db.Model):
+  uid = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String(30))
+  code = db.Column(db.String(3))
+
+  def __init__(self, name, code):
+    self.name = name
+    self.code = code
+
 class User(db.Model):
   uid = db.Column(db.Integer, primary_key = True)
   firstname = db.Column(db.String(100))
@@ -13,10 +22,12 @@ class User(db.Model):
   topics = db.relationship('Topic', backref='User', lazy='dynamic')
   messages = db.relationship('Message', backref='User', lazy='dynamic')
   topic_name = db.Column(db.String(100))
+  lang = db.Column(db.Integer, db.ForeignKey(Language.uid))
   
-  def __init__(self, firstname, lastname, email, password, topics, messages):
+  def __init__(self, firstname, lastname, email, password, topics, messages, lang):
     self.firstname = firstname.title()
     self.lastname = lastname.title()
+    self.lang = lang
     self.email = email.lower()
     self.set_password(password)
     

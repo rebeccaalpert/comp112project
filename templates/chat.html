@@ -67,7 +67,11 @@
               <ul class="media-list" id="chat">
                 {% for message in messages %}
                 {% if message.topic_name == session['room'] %}
-                  <li class="message">{{ message.text }}<br />posted by {{ message.user_email }} at {{ message.posted }}</li>
+                  <li class="message"><span id="actual_msg">{{ message.text }}</span> 
+                    <button type="button" id="translate_btn" class="btn btn-default" aria-label="Left Align"> <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span>
+                    </button>
+                    <span id="translated"></span>
+                    <br />posted by {{ message.user_email }} at {{ message.posted }}</li>
                 {% endif %}
               {% endfor %}
               </ul>
@@ -88,6 +92,7 @@
 </div>
 <script>
   $(document).ready(function() {
+    key = 'trnsl.1.1.20180323T002815Z.931efcfa06f08dc6.585e129a89a9ad92ac700de57bf10c55bd482438';
     $('#submit').addClass('btn').addClass('btn-info').css('margin-top', '1em');
     $('#topicname').addClass('form-control');
     var channel = "/chat";
@@ -158,6 +163,23 @@
       socket.emit('joined', { data: { room: chatroom } });
     });
 
+    $('#translate_btn').on('click', function() {
+        if($("#translated").text() != "") {
+          $("#translated").html("");
+        } else {
+          user_email = $('#user-name').text();
+          $.when(
+            getUserLang(user_email),
+            detectLang($("#actual_msg").text()),
+          ).then(function(to, from) {
+            direction = concatString(from[0].lang, to[0]);
+            
+            translate($("#actual_msg").text(), direction);
+
+          });
+        }
+    });
+
     function clearMessages() {
       $('.media-list li').detach();
     }
@@ -177,6 +199,26 @@
       }
       return str.join(' ');
     }
+
+    function getUserLang(email) {
+      return $.get('http://' + document.domain + ':' + location.port + '/user_language/' + email);
+    }
+
+    function detectLang(text) {
+      return $.get('https://translate.yandex.net/api/v1.5/tr.json/detect', { key: key, text: text });
+    }
+
+    function translate(text, direction) {
+       console.log(text + " " + direction);
+      $.get('https://translate.yandex.net/api/v1.5/tr.json/translate', { key: key, text: text, lang: direction }, function(data) {
+          $("#translated").html(data.text[0]);
+        });
+    }
+
+    function concatString(from, to) {
+      return from + '-' + to;
+    }
+
   });
   </script>
 
