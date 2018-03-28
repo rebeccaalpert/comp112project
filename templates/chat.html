@@ -44,7 +44,7 @@
             </div>
             <div class="container-fluid">
               {% for message in form.topicname.errors %}
-              <div class="flash">{{ message }}</div>
+              <div class="alert alert-danger margin-top">{{ message }}</div>
               {% endfor %}
       
               <form id="submit-topic" action="{{ url_for('chat') }}" method="post">
@@ -106,14 +106,12 @@
     });
 
     socket.on('status', function(data) {
-      console.log(data);
       $('#chat').append('<li class="message">' + data.msg + '</li>');
       if (data.msg.includes("has entered") && $('.user:contains("' + data.user + '")').length == 0) {
         $('#active-users').append('<li class="user">' + data.user + '</li>');
       } else if (data.msg.includes("has left")) {
         $('.user:contains("' + data.user + '")').remove();
       }
-      $('#chat').append('<li class="message">' + data.msg + '\n');
       $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
     
@@ -142,11 +140,15 @@
     });
 
     $('#submit').on("click", function() {
-      var name = $("#topicname").val();
-      console.log(name);
-      socket.emit('new_topic', { data: { room: name } });
-      clearMessages();
-      socket.emit('left', {});
+      if ($('.alert')) {
+
+      } else {
+        var name = $("#topicname").val();
+        console.log(name);
+        socket.emit('new_topic', { data: { room: name } });
+        clearMessages();
+        socket.emit('left', {});
+      }
     });
 
     $('#chat-rooms').on( 'click', 'a', function () {
@@ -176,11 +178,6 @@
       return str.join(' ');
     }
   });
-  
-    /*function refreshMessages(message) {
-      $(".media-list").append('<li class="media"><div class="media-body"><div class="media"><div class="media-body">'
-        + message.data.message + '<br/><small class="text-muted">' + message.data.author + '</small><hr/></div></div></div></li>');
-    }*/
   </script>
 
 {% endblock %}

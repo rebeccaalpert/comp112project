@@ -1,42 +1,41 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container content">
   <h2>Sign Up</h2>
-
-  {% for message in form.firstname.errors %}
-    <div class="flash">{{ message }}</div>
-  {% endfor %}
-  
-  {% for message in form.lastname.errors %}
-    <div class="flash">{{ message }}</div>
-  {% endfor %}
-  
-  {% for message in form.email.errors %}
-    <div class="flash">{{ message }}</div>
-  {% endfor %}
-  
-  {% for message in form.password.errors %}
-    <div class="flash">{{ message }}</div>
-  {% endfor %}
-  
-  <form action="{{ url_for('signup') }}" method=post>
-    {{ form.hidden_tag() }}
+    {% for message in form.firstname.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
     
-    {{ form.firstname.label }}
-    {{ form.firstname }}
+    {% for message in form.lastname.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
     
-    {{ form.lastname.label }}
-    {{ form.lastname }}
+    {% for message in form.email.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
     
-    {{ form.email.label }}
-    {{ form.email }}
+    {% for message in form.password.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
     
-    {{ form.password.label }}
-    {{ form.password }}
-    
-    {{ form.submit }}
-  </form>
+    <form action="{{ url_for('signup') }}" method=post>
+      {{ form.hidden_tag() }}
+      
+      {{ form.firstname.label }}
+      {{ form.firstname }}
+      
+      {{ form.lastname.label }}
+      {{ form.lastname }}
+      
+      {{ form.email.label }}
+      {{ form.email }}
+      
+      {{ form.password.label }}
+      {{ form.password }}
+      
+      {{ form.submit }}
+    </form>
 </div>
-    
+
 {% endblock %}

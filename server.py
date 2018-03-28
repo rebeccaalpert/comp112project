@@ -168,7 +168,7 @@ def signup():
 			return redirect(url_for('chat'))
 	
 	if request.method == 'GET':
-		return render_template('login.html', form=form)
+		return render_template('signup.html', form=form)
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
