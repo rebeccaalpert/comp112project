@@ -17,9 +17,6 @@ New features:
 * When new users join a chatroom, sockets are used to update the list of active users for everyone until they refresh
 * If a user tries to access a chatroom that doesn't exist, they're redirected to the general chatroom
 
-To do:
-* Chatroom deletion
-
 To run the program:
 * source venv/bin/activate
 * pip install -r requirements.txt

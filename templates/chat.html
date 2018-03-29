@@ -33,7 +33,11 @@
             <ul id="chat-rooms">
               {% for topic in topics %}
                 {% if topic.topicname %}
-                  <li class="topic"><a href="/chat/{{ topic.topicname }}">{{ topic.topicname }}</a></li>
+                  <li class="topic"><a href="/chat/{{ topic.topicname }}">{{ topic.topicname }}</a>
+                    {% if topic.user_id == session['uid'] %}
+                      <span id="{{topic.uid}}" class="remove_chatroom_btn"><span class="glyphicon glyphicon-remove-sign" style="padding-left: 10px;"></span></span>
+                    {% endif %}  
+                  </li>
                 {% endif %}
               {% endfor %}
             </ul>
@@ -130,6 +134,12 @@
     socket.on('update_topics', function(data) {
       $('#chat-rooms').append('<li class="topic"><a href="/chat/' + titleCase(data.msg.room) + '">' + titleCase(data.msg.room) + '</a></li>');
     });
+
+    socket.on('delete_my_chatroom', function(data) {
+      console.log("DELETE MY Chatroom!");
+      console.log(data);
+      console.log("T");
+    });
     
     $('#messageText').keypress(function(e) {
       var code = e.keyCode || e.which;
@@ -161,6 +171,12 @@
       clearMessages();
       socket.emit('left', {});
       socket.emit('joined', { data: { room: chatroom } });
+    });
+
+    $('.remove_chatroom_btn').on("click", function() {
+        var id = $(this).attr('id');
+        $(this).parent().remove();
+        socket.emit('delete_my_chatroom', { data: { id: id } });
     });
 
     $('#translate_btn').on('click', function() {

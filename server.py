@@ -54,6 +54,7 @@ def chat():
 	if user is None:
 		return redirect(url_for('signin'))
 	else:
+		session['uid'] = user.uid
 		if request.method == 'POST':
 			if form.validate() == False:
 				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
@@ -304,6 +305,14 @@ def new_topic(message):
 	print(message)
 	print(message['data']['room'])
 	emit('update_topics', {'msg': { 'room': message['data']['room'] }}, broadcast=True)
+
+
+@socketio.on('delete_my_chatroom', namespace='/chat')
+def delete_my_chatroom(message):
+	print("delete_my_chatroom\n")
+	print(message['data']['id'])
+	topic = Topic.query.filter_by(uid=message['data']['id']).delete()
+	db.session.commit()
 
 if __name__ == '__main__':
 	socketio.run(app)
