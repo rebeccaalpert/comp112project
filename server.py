@@ -157,8 +157,7 @@ def signup():
 
 	lang = Language.query.filter_by()
 	form.language.choices = [(g.uid, g.name) for g in Language.query.order_by('name')]
-	print form.language.choices
-
+	
 	if 'email' in session:
 		return redirect(url_for('chat')) 
 	
