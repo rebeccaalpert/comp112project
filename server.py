@@ -5,7 +5,7 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm
-from models import db, User, Topic, Message, PrivateMessage
+from models import db, User, Topic, Message, PrivateMessage, Language
 import datetime
 import math
 
@@ -54,6 +54,7 @@ def chat():
 	if user is None:
 		return redirect(url_for('signin'))
 	else:
+		session['uid'] = user.uid
 		if request.method == 'POST':
 			if form.validate() == False:
 				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
@@ -154,6 +155,9 @@ def signup():
 
 	session['room'] = 'General'
 
+	lang = Language.query.filter_by()
+	form.language.choices = [(g.uid, g.name) for g in Language.query.order_by('name')]
+	
 	if 'email' in session:
 		return redirect(url_for('chat')) 
 	
@@ -161,7 +165,7 @@ def signup():
 		if form.validate() == False:
 			return render_template('signup.html', form=form)
 		else:
-			newuser = User(form.firstname.data, form.lastname.data, form.email.data, form.password.data, None, None)
+			newuser = User(form.firstname.data, form.lastname.data, form.email.data, form.password.data, None, None, form.language.data)
 			db.session.add(newuser)
 			db.session.commit()
 			session['email'] = newuser.email
@@ -197,6 +201,22 @@ def signout():
 	session.pop('email', None)
 	session.pop('room', None)
 	return redirect(url_for('signin'))
+
+
+@app.route('/user_language/<email>', methods=['GET', 'POST'])
+def resolveUserLanguage(email):
+	if 'email' not in session:
+		return redirect(url_for('signin'))
+
+	user = User.query.filter_by(email = email).first()
+
+	if user is None:
+		return redirect(url_for('signin'))
+	else:
+		lang = Language.query.filter_by(uid = user.lang).first()
+		if lang:
+			return lang.code
+		return "-1"
 
 @socketio.on('joined', namespace='/chat')
 def joined(message):
@@ -284,6 +304,14 @@ def new_topic(message):
 	print(message)
 	print(message['data']['room'])
 	emit('update_topics', {'msg': { 'room': message['data']['room'] }}, broadcast=True)
+
+
+@socketio.on('delete_my_chatroom', namespace='/chat')
+def delete_my_chatroom(message):
+	print("delete_my_chatroom\n")
+	print(message['data']['id'])
+	topic = Topic.query.filter_by(uid=message['data']['id']).delete()
+	db.session.commit()
 
 if __name__ == '__main__':
 	socketio.run(app)
