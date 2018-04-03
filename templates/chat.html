@@ -67,7 +67,7 @@
               <ul class="media-list" id="chat">
                 {% for message in messages %}
                 {% if message.topic_name == session['room'] %}
-                  <li class="message">{{ message.text }}<br />posted by {{ message.user_email }} at {{ message.posted }}</li>
+                  <li class="message"><strong>{{ message.user_email }}</strong> <span class="text-muted">{{ message.posted }}</span><br />{{ message.text }}</li>
                 {% endif %}
               {% endfor %}
               </ul>
@@ -118,7 +118,7 @@
     socket.on('message', function(data) {
       receivedMsg = data;
       console.log(receivedMsg);
-      $('#chat').append('<li class="message">' + data.text + '<br />' + 'posted by ' + data.author + data.time + '</li>');
+      $('#chat').append('<li class="message"><strong>' + data.author + '</strong> <span class="text-muted">' + data.time + '</span><br />' + data.text + '</li>');
       $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
 
@@ -140,10 +140,9 @@
     });
 
     $('#submit').on("click", function() {
-      if ($('.alert')) {
-
-      } else {
+      if ($('.alert').length == 0) {
         var name = $("#topicname").val();
+        console.log("new chatroom");
         console.log(name);
         socket.emit('new_topic', { data: { room: name } });
         clearMessages();
