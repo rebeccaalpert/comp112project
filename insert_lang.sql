@@ -1,97 +1,93 @@
--- Populates the language table with
--- languages that are supported by Yandex translate API
-USE development;
-
-INSERT INTO language (name, code) VALUES ('Azerbaijan', 'az');
-INSERT INTO language (name, code) VALUES ('Malayalam', 'ml');
-INSERT INTO language (name, code) VALUES ('Albanian', 'sq');
-INSERT INTO language (name, code) VALUES ('Maltese', 'mt');
-INSERT INTO language (name, code) VALUES ('Amharic', 'am');
-INSERT INTO language (name, code) VALUES ('Macedonian', 'mk');
-INSERT INTO language (name, code) VALUES ('English', 'en');
-INSERT INTO language (name, code) VALUES ('Maori', 'mi');
-INSERT INTO language (name, code) VALUES ('Arabic', 'ar');
-INSERT INTO language (name, code) VALUES ('Marathi', 'mr');
-INSERT INTO language (name, code) VALUES ('Armenian', 'hy');
-INSERT INTO language (name, code) VALUES ('Mari', 'mhr');
-INSERT INTO language (name, code) VALUES ('Afrikaans', 'af');
-INSERT INTO language (name, code) VALUES ('Mongolian', 'mn');
-INSERT INTO language (name, code) VALUES ('Basque', 'eu');
-INSERT INTO language (name, code) VALUES ('German', 'de');
-INSERT INTO language (name, code) VALUES ('Bashkir', 'ba');
-INSERT INTO language (name, code) VALUES ('Nepali', 'ne');
-INSERT INTO language (name, code) VALUES ('Belarusian', 'be');
-INSERT INTO language (name, code) VALUES ('Norwegian', 'no');
-INSERT INTO language (name, code) VALUES ('Bengali', 'bn');
-INSERT INTO language (name, code) VALUES ('Punjabi', 'pa');
-INSERT INTO language (name, code) VALUES ('Burmese', 'my');
-INSERT INTO language (name, code) VALUES ('Papiamento', 'pap');
-INSERT INTO language (name, code) VALUES ('Bulgarian', 'bg');
-INSERT INTO language (name, code) VALUES ('Persian', 'fa');
-INSERT INTO language (name, code) VALUES ('Bosnian', 'bs');
-INSERT INTO language (name, code) VALUES ('Polish', 'pl');
-INSERT INTO language (name, code) VALUES ('Welsh', 'cy');
-INSERT INTO language (name, code) VALUES ('Portuguese', 'pt');
-INSERT INTO language (name, code) VALUES ('Hungarian', 'hu');
-INSERT INTO language (name, code) VALUES ('Romanian', 'ro');
-INSERT INTO language (name, code) VALUES ('Vietnamese', 'vi');
-INSERT INTO language (name, code) VALUES ('Russian', 'ru');
-INSERT INTO language (name, code) VALUES ('Haitian (Creole)', 'ht');
-INSERT INTO language (name, code) VALUES ('Cebuano', 'ceb');
-INSERT INTO language (name, code) VALUES ('Galician', 'gl');
-INSERT INTO language (name, code) VALUES ('Serbian', 'sr');
-INSERT INTO language (name, code) VALUES ('Dutch', 'nl');
-INSERT INTO language (name, code) VALUES ('Sinhala', 'si');
-INSERT INTO language (name, code) VALUES ('Hill Mari', 'mrj');
-INSERT INTO language (name, code) VALUES ('Slovakian', 'sk');
-INSERT INTO language (name, code) VALUES ('Greek', 'el');
-INSERT INTO language (name, code) VALUES ('Slovenian', 'sl');
-INSERT INTO language (name, code) VALUES ('Georgian', 'ka');
-INSERT INTO language (name, code) VALUES ('Swahili', 'sw');
-INSERT INTO language (name, code) VALUES ('Gujarati', 'gu');
-INSERT INTO language (name, code) VALUES ('Sundanese', 'su');
-INSERT INTO language (name, code) VALUES ('Danish', 'da');
-INSERT INTO language (name, code) VALUES ('Tajik', 'tg');
-INSERT INTO language (name, code) VALUES ('Hebrew', 'he');
-INSERT INTO language (name, code) VALUES ('Thai', 'th');
-INSERT INTO language (name, code) VALUES ('Yiddish', 'yi');
-INSERT INTO language (name, code) VALUES ('Tagalog', 'tl');
-INSERT INTO language (name, code) VALUES ('Indonesian', 'id');
-INSERT INTO language (name, code) VALUES ('Tamil', 'ta');
-INSERT INTO language (name, code) VALUES ('Irish', 'ga');
-INSERT INTO language (name, code) VALUES ('Tatar', 'tt');
-INSERT INTO language (name, code) VALUES ('Italian', 'it');
-INSERT INTO language (name, code) VALUES ('Telugu', 'te');
-INSERT INTO language (name, code) VALUES ('Icelandic', 'is');
-INSERT INTO language (name, code) VALUES ('Turkish', 'tr');
-INSERT INTO language (name, code) VALUES ('Spanish', 'es');
-INSERT INTO language (name, code) VALUES ('Udmurt', 'udm');
-INSERT INTO language (name, code) VALUES ('Kazakh', 'kk');
-INSERT INTO language (name, code) VALUES ('Uzbek', 'uz');
-INSERT INTO language (name, code) VALUES ('Kannada', 'kn');
-INSERT INTO language (name, code) VALUES ('Ukrainian', 'uk');
-INSERT INTO language (name, code) VALUES ('Catalan', 'ca');
-INSERT INTO language (name, code) VALUES ('Urdu', 'ur');
-INSERT INTO language (name, code) VALUES ('Kyrgyz', 'ky');
-INSERT INTO language (name, code) VALUES ('Finnish', 'fi');
-INSERT INTO language (name, code) VALUES ('Chinese', 'zh');
-INSERT INTO language (name, code) VALUES ('French', 'fr');
-INSERT INTO language (name, code) VALUES ('Korean', 'ko');
-INSERT INTO language (name, code) VALUES ('Hindi', 'hi');
-INSERT INTO language (name, code) VALUES ('Xhosa', 'xh');
-INSERT INTO language (name, code) VALUES ('Croatian', 'hr');
-INSERT INTO language (name, code) VALUES ('Khmer', 'km');
-INSERT INTO language (name, code) VALUES ('Czech', 'cs');
-INSERT INTO language (name, code) VALUES ('Laotian', 'lo');
-INSERT INTO language (name, code) VALUES ('Swedish', 'sv');
-INSERT INTO language (name, code) VALUES ('Latin', 'la');
-INSERT INTO language (name, code) VALUES ('Scottish', 'gd');
-INSERT INTO language (name, code) VALUES ('Latvian', 'lv');
-INSERT INTO language (name, code) VALUES ('Estonian', 'et');
-INSERT INTO language (name, code) VALUES ('Lithuanian', 'lt');
-INSERT INTO language (name, code) VALUES ('Esperanto', 'eo');
-INSERT INTO language (name, code) VALUES ('Luxembourgish', 'lb');
-INSERT INTO language (name, code) VALUES ('Javanese', 'jv');
-INSERT INTO language (name, code) VALUES ('Malagasy', 'mg');
-INSERT INTO language (name, code) VALUES ('Japanese', 'ja');
-INSERT INTO language (name, code) VALUES ('Malay', 'ms');
+t = Language('Azerbaijan', 'az')
+t = Language('Malayalam', 'ml')
+t = Language('Albanian', 'sq')
+t = Language('Maltese', 'mt')
+t = Language('Amharic', 'am')
+t = Language('Macedonian', 'mk')
+t = Language('English', 'en')
+t = Language('Maori', 'mi')
+t = Language('Arabic', 'ar')
+t = Language('Marathi', 'mr')
+t = Language('Armenian', 'hy')
+t = Language('Mari', 'mhr')
+t = Language('Afrikaans', 'af')
+t = Language('Mongolian', 'mn')
+t = Language('Basque', 'eu')
+t = Language('German', 'de')
+t = Language('Bashkir', 'ba')
+t = Language('Nepali', 'ne')
+t = Language('Belarusian', 'be')
+t = Language('Norwegian', 'no')
+t = Language('Bengali', 'bn')
+t = Language('Punjabi', 'pa')
+t = Language('Burmese', 'my')
+t = Language('Papiamento', 'pap')
+t = Language('Bulgarian', 'bg')
+t = Language('Persian', 'fa')
+t = Language('Bosnian', 'bs')
+t = Language('Polish', 'pl')
+t = Language('Welsh', 'cy')
+t = Language('Portuguese', 'pt')
+t = Language('Hungarian', 'hu')
+t = Language('Romanian', 'ro')
+t = Language('Vietnamese', 'vi')
+t = Language('Russian', 'ru')
+t = Language('Creole', 'ht')
+t = Language('Cebuano', 'ceb')
+t = Language('Galician', 'gl')
+t = Language('Serbian', 'sr')
+t = Language('Dutch', 'nl')
+t = Language('Sinhala', 'si')
+t = Language('Hill Mari', 'mrj')
+t = Language('Slovakian', 'sk')
+t = Language('Greek', 'el')
+t = Language('Slovenian', 'sl')
+t = Language('Georgian', 'ka')
+t = Language('Swahili', 'sw')
+t = Language('Gujarati', 'gu')
+t = Language('Sundanese', 'su')
+t = Language('Danish', 'da')
+t = Language('Tajik', 'tg')
+t = Language('Hebrew', 'he')
+t = Language('Thai', 'th')
+t = Language('Yiddish', 'yi')
+t = Language('Tagalog', 'tl')
+t = Language('Indonesian', 'id')
+t = Language('Tamil', 'ta')
+t = Language('Irish', 'ga')
+t = Language('Tatar', 'tt')
+t = Language('Italian', 'it')
+t = Language('Telugu', 'te')
+t = Language('Icelandic', 'is')
+t = Language('Turkish', 'tr')
+t = Language('Spanish', 'es')
+t = Language('Udmurt', 'udm')
+t = Language('Kazakh', 'kk')
+t = Language('Uzbek', 'uz')
+t = Language('Kannada', 'kn')
+t = Language('Ukrainian', 'uk')
+t = Language('Catalan', 'ca')
+t = Language('Urdu', 'ur')
+t = Language('Kyrgyz', 'ky')
+t = Language('Finnish', 'fi')
+t = Language('Chinese', 'zh')
+t = Language('French', 'fr')
+t = Language('Korean', 'ko')
+t = Language('Hindi', 'hi')
+t = Language('Xhosa', 'xh')
+t = Language('Croatian', 'hr')
+t = Language('Khmer', 'km')
+t = Language('Czech', 'cs')
+t = Language('Laotian', 'lo')
+t = Language('Swedish', 'sv')
+t = Language('Latin', 'la')
+t = Language('Scottish', 'gd')
+t = Language('Latvian', 'lv')
+t = Language('Estonian', 'et')
+t = Language('Lithuanian', 'lt')
+t = Language('Esperanto', 'eo')
+t = Language('Luxembourgish', 'lb')
+t = Language('Javanese', 'jv')
+t = Language('Malagasy', 'mg')
+t = Language('Japanese', 'ja')
+t = Language('Malay', 'ms')

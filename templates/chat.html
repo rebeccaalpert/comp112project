@@ -33,9 +33,9 @@
             <ul id="chat-rooms">
               {% for topic in topics %}
                 {% if topic.topicname %}
-                  <li class="topic"><a href="/chat/{{ topic.topicname }}">{{ topic.topicname }}</a>
+                  <li id="{{topic.topicname}}" class="topic"><a href="/chat/{{ topic.topicname }}">{{ topic.topicname }}</a>
                     {% if topic.user_id == session['uid'] %}
-                      <span id="{{topic.uid}}" class="remove_chatroom_btn"><span class="glyphicon glyphicon-remove-sign" style="padding-left: 10px;"></span></span>
+                      <span id="{{topic.uid}}" class="remove_chatroom_btn" onclick="remove_chatroom(this)"><span class="glyphicon glyphicon-remove-sign" style="padding-left: 10px;"></span></span>
                     {% endif %}  
                   </li>
                 {% endif %}
@@ -71,9 +71,9 @@
               <ul class="media-list" id="chat">
                 {% for message in messages %}
                 {% if message.topic_name == session['room'] %}
-                  <li class="message"><strong>{{ message.user_email }}</strong> <span class="text-muted">{{ message.posted }}</span><br /><span id="actual_msg">{{ message.text }}</span> <button type="button" id="translate_btn" class="btn btn-default" aria-label="Left Align"> <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span>
+                  <li class="message"><strong>{{ message.user_email }}</strong> <span class="text-muted">{{ message.posted }}</span><br /><span id="{{message.uid}}-actual_msg">{{ message.text }}</span> <button onclick="start_translation(this)" type="button" id="{{message.uid}}" class="btn btn-default" aria-label="Left Align"> <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span>
                     </button>
-                    <span id="translated"></span></li>
+                    <span id="{{message.uid}}-translated"></span><div style="float:right; clear:left;" class=""></div></li>
                 {% endif %}
               {% endfor %}
               </ul>
@@ -93,6 +93,7 @@
   </div>
 </div>
 <script>
+
   $(document).ready(function() {
     key = 'trnsl.1.1.20180323T002815Z.931efcfa06f08dc6.585e129a89a9ad92ac700de57bf10c55bd482438';
     $('#submit').addClass('btn').addClass('btn-info').css('margin-top', '1em');
@@ -125,18 +126,20 @@
     socket.on('message', function(data) {
       receivedMsg = data;
       console.log(receivedMsg);
-      $('#chat').append('<li class="message"><strong>' + data.author + '</strong> <span class="text-muted">' + data.time + '</span><br />' + data.text + '</li>');
+      $('#chat').append('<li class="message"><strong>' + data.author + '</strong> <span class="text-muted">' + data.time + '</span><br /><span class="actual_msg">'+ data.text + '</span><button onclick="start_translation(this)" type="button" class="btn btn-default" aria-label="Left Align"> <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span> </button><span class="translated_noid"></span><div style="float:right; clear:left;" class=""></div></li>');
       $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
 
     socket.on('update_topics', function(data) {
-      $('#chat-rooms').append('<li class="topic"><a href="/chat/' + titleCase(data.msg.room) + '">' + titleCase(data.msg.room) + '</a></li>');
+      console.log(data);
+      $('#chat-rooms').append('<li id="' + titleCase(data.msg.room) + '" class="topic"><a href="/chat/' + titleCase(data.msg.room) + '">' + titleCase(data.msg.room) + '</a></li>');
     });
 
     socket.on('delete_my_chatroom', function(data) {
       console.log("DELETE MY Chatroom!");
-      console.log(data);
-      console.log("T");
+      console.log($('#' + data['msg']));
+      console.log("TO BE DELETE " + data['msg']);
+      delete_chatroom($('#' + data['msg']));
     });
     
     $('#messageText').keypress(function(e) {
@@ -170,28 +173,59 @@
       socket.emit('joined', { data: { room: chatroom } });
     });
 
-    $('.remove_chatroom_btn').on("click", function() {
-        var id = $(this).attr('id');
-        $(this).parent().remove();
-        socket.emit('delete_my_chatroom', { data: { id: id } });
-    });
 
-    $('#translate_btn').on('click', function() {
-        if($("#translated").text() != "") {
-          $("#translated").html("");
+    remove_chatroom = function(elem) {
+        id = $(elem).attr('id');
+        parent_id = $(elem).parent().attr('id');
+        console.log("ids: " + id + " " + parent_id);
+        socket.emit('delete_my_chatroom', { data: { id: id, parent: parent_id} });
+    }
+
+    delete_chatroom = function(id) {
+      if(id) {
+        console.log("exists");
+        id.remove();
+      }
+      console.log("does not exist");
+    }
+
+    start_translation = function(elem) {
+      var el_id = $(elem).attr("id");
+      var actual_msg = '';
+      var trans_holder = '';
+
+      if (typeof el_id === 'undefined') {
+        trans_holder = $('.translated_noid').last();
+        actual_msg = $('.actual_msg').last();
+        
+      } else {
+        trans_holder = $("#" + el_id + "-translated");
+        actual_msg = $("#" + el_id + "-actual_msg");
+      }
+
+      console.log(trans_holder);
+      console.log(actual_msg);
+
+      if(trans_holder.text() != "") {
+          trans_holder.html("");
         } else {
           user_email = $('#user-name').text();
+          // add the loader class to the div node. (start loader)
+          $(elem).parent().children().last().addClass('loader');
           $.when(
             getUserLang(user_email),
-            detectLang($("#actual_msg").text()),
+            detectLang(actual_msg.text()),
           ).then(function(to, from) {
             direction = concatString(from[0].lang, to[0]);
             
-            translate($("#actual_msg").text(), direction);
+            translate(actual_msg.text(), direction, trans_holder);
 
+          }).then(function() {
+            // Remove the loader class from the div node. (stop loader)
+            $(elem).parent().children().last().removeClass('loader');
           });
         }
-    });
+    }
 
     function clearMessages() {
       $('.media-list li').detach();
@@ -221,10 +255,10 @@
       return $.get('https://translate.yandex.net/api/v1.5/tr.json/detect', { key: key, text: text });
     }
 
-    function translate(text, direction) {
+    function translate(text, direction, output) {
        console.log(text + " " + direction);
       $.get('https://translate.yandex.net/api/v1.5/tr.json/translate', { key: key, text: text, lang: direction }, function(data) {
-          $("#translated").html(data.text[0]);
+          output.html(data.text[0]);
         });
     }
 
