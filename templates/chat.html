@@ -126,7 +126,7 @@
     socket.on('message', function(data) {
       receivedMsg = data;
       console.log(receivedMsg);
-      $('#chat').append('<li class="message"><strong>' + data.author + '</strong> <span class="text-muted">' + data.time + '</span><br /><span class="actual_msg">'+ data.text + '</span><button onclick="start_translation(this)" type="button" class="btn btn-default" aria-label="Left Align"> <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span> </button><span class="translated_noid"></span><div style="float:right; clear:left;" class=""></div></li>');
+      $('#chat').append('<li class="message"><strong>' + data.author + '</strong> <span class="text-muted">' + data.time + '</span><br /><span class="actual_msg">'+ data.text + '</span> <button onclick="start_translation(this)" type="button" class="btn btn-default" aria-label="Left Align"> <span class="glyphicon glyphicon-transfer" aria-hidden="true"></span> </button> <span class="translated_noid"></span><div style="float:right; clear:left;" class=""></div></li>');
       $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
 
@@ -139,6 +139,10 @@
       console.log("DELETE MY Chatroom!");
       console.log($('#' + data['msg']));
       console.log("TO BE DELETE " + data['msg']);
+      if (room == data['msg']) {
+        socket.emit('left', {});
+        window.location.replace("/chat");
+      }
       delete_chatroom($('#' + data['msg']));
     });
     
