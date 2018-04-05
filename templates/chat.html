@@ -145,9 +145,6 @@
     });
 
     socket.on('delete_my_chatroom', function(data) {
-      console.log("DELETE MY Chatroom!");
-      console.log($('#' + data['msg']));
-      console.log("TO BE DELETE " + data['msg']);
       if (room == data['msg']) {
         socket.emit('left', {});
         window.location.replace("/chat");
