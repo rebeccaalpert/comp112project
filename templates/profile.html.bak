@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong>Profile</strong>
+            </div>
+            <ul id="profile">
+              <li class="item">First Name</li>
+              <i class="info">{{ user.firstname }}</i>
+              <li class="item">Last Name</li>
+              <i class="info">{{ user.lastname }}</i>
+              <li class="item">Email</li>
+              <i class="info">{{ user.email }}</i>
+              <li class="item">Language</li>
+              <i class="info">{{ lang }}</i>
+              <li class="item">Topics</li>
+                {% for topic in user.topics %}
+                  <i class="info">{{ topic.topicname }}</i>
+                {% endfor %}
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

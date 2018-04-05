@@ -100,12 +100,13 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="{{ url_for('home') }}">FunkyAppName</a>
+          <a class="navbar-brand" href="{{ url_for('home') }}">Top Chat</a>
         </div>
         <div class="collapse navbar-collapse" id="navitems">
           <ul class="nav navbar-nav">
             {% if 'email' in session %}
             <li><a href="{{ url_for('chat') }}">Chat</a></li>
+            <li><a href="{{ url_for('profile') }}">Profile</a></li>
             <li><a href="{{ url_for('signout') }}">Sign Out</a></li>
             {% else %}
             <li><a href="{{ url_for('signup') }}">Sign Up</a></li>

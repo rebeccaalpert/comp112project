@@ -4,8 +4,9 @@ monkey.patch_all()
 from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
-from forms import SignupForm, SigninForm, TopicForm
+from forms import SignupForm, SigninForm, TopicForm, ProfileForm
 from models import db, User, Topic, Message, PrivateMessage, Language
+from sqlalchemy import update
 import datetime
 import math
 
@@ -340,6 +341,32 @@ def private_chat(username):
 		if request.method == 'GET':
 			return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=chat_partner.email)
 
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+	user = User.query.filter_by(email = session['email']).first()
+
+	if user is None:
+		return redirect(url_for('signin'))
+
+	form = ProfileForm(language=user.lang)
+	session['room'] = 'General'
+	form.language.choices = [(g.uid, g.name) for g in Language.query.order_by('name')]
+	
+	if 'email' not in session:
+		return redirect(url_for('signin'))
+	
+	if request.method == 'POST':
+		if form.validate() == False:
+			return render_template('profile.html', form=form, user=user)
+		else:
+			user.firstname = form.firstname.data
+			user.lastname = form.lastname.data
+			user.lang = form.language.data
+			db.session.commit()
+			return redirect(url_for('profile'))
+	
+	if request.method == 'GET':
+		return render_template('profile.html', form=form, user=user)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -347,7 +374,6 @@ def signup():
 
 	session['room'] = 'General'
 
-	lang = Language.query.filter_by()
 	form.language.choices = [(g.uid, g.name) for g in Language.query.order_by('name')]
 	
 	if 'email' in session:

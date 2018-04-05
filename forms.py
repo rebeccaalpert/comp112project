@@ -42,6 +42,22 @@ class SignupForm(Form):
     else:
       return True
 
+class ProfileForm(Form):
+  firstname = TextField("First name", [validators.Required("Please enter your first name.")])
+  lastname = TextField("Last name",  [validators.Required("Please enter your last name.")])
+  language = SelectField('Language', coerce=int)
+  password = PasswordField('New Password')
+  submit = SubmitField("Update Profile")
+
+  def __init__(self, *args, **kwargs):
+    Form.__init__(self, *args, **kwargs)
+
+  def validate(self):
+    if not Form.validate(self):
+      return False
+    else:
+      return True
+
 class SigninForm(Form):
   email = TextField("Email",  [validators.Required("Please enter your email address."), validators.Email("Please enter your email address.")])
   password = PasswordField('Password', [validators.Required("Please enter a password.")])

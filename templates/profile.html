@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container content">
+  <h2>Profile</h2>
+    {% for message in form.firstname.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
+    
+    {% for message in form.lastname.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
+    
+    <!-- {% for message in form.password.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %} -->
+    
+    <form action="{{ url_for('profile') }}" method=post>
+      {{ form.hidden_tag() }}
+      
+      {{ form.firstname.label }}
+      {{ form.firstname(value=user.firstname) }}
+      
+      {{ form.lastname.label }}
+      {{ form.lastname(value=user.lastname) }}
+
+      {{ form.language.label }}
+      <p>{{ form.language }}</p> <!-- Workaround with p to move Email label under dropdown -->
+
+      <strong><p>Topics</p></strong>
+      <p>
+        {% for topic in user.topics %}
+          <li class="info">{{ topic.topicname }}</li>
+        {% endfor %}
+      </p>
+      
+      <strong><p>Email</p></strong>
+      <div class="info">{{ user.email }}</div>
+      
+      <!-- {{ form.password.label }}
+      {{ form.password }} -->
+      
+      {{ form.submit }}
+    </form>
+</div>
+
+{% endblock %}
