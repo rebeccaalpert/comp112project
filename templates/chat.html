@@ -12,16 +12,25 @@
           </div>
           <div class="panel panel-info">
             <div class="panel-heading">
-              <strong>Active Users</strong>
+              <strong>Active Users in Current Room</strong>
             </div>
             <ul id="active-users">
               {% for user in users %}
                 {% if user.topic_name == session['room'] %}
-                  {% if user.email != session['email'] %}
-                    <li class="user"><a href="/private_chat/{{ user.email }}">{{ user.email }}</a></li>
-                  {% else %}
-                    <li class="user">{{ user.email }}</li>
-                  {% endif %}
+                  <li class="user">{{ user.email }}</li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong>Private Chats</strong>
+            </div>
+            <ul id="active-users">
+              {% for user in users %}
+                {% if user.email != session['email'] %}
+                  <li class="user"><a href="/private_chat/{{ user.email }}">
+                  {{ user.email }}</a></li>
                 {% endif %}
               {% endfor %}
             </ul>
