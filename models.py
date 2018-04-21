@@ -4,11 +4,6 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
-user_topic_association = db.Table('user_topic_association',
-  db.Column('user_id', db.Integer, db.ForeignKey('user.uid'), primary_key=True),
-  db.Column('topic_id', db.Integer, db.ForeignKey('topic.uid'), primary_key=True)
-)
-
 class BannedUser(db.Model):
   id = db.Column(db.Integer, primary_key = True)
   user_id = db.Column(db.Integer, db.ForeignKey('user.uid'))
@@ -19,6 +14,15 @@ class BannedUser(db.Model):
     self.user_id = user_id
     self.topic_id = topic_id
     self.times_flagged = 0
+
+class Moderator(db.Model):
+  id = db.Column(db.Integer, primary_key = True)
+  user_id = db.Column(db.Integer, db.ForeignKey('user.uid'))
+  topic_id = db.Column(db.Integer, db.ForeignKey('topic.uid'))
+
+  def __init__(self, user_id, topic_id):
+    self.user_id = user_id
+    self.topic_id = topic_id
 
 class Language(db.Model):
   uid = db.Column(db.Integer, primary_key=True)
@@ -58,7 +62,6 @@ class Topic(db.Model):
   topicname = db.Column(db.String(100), unique=True)
   user_id = db.Column(db.Integer, db.ForeignKey(User.uid))
   messages = db.relationship('Message', backref='Topic', lazy='dynamic')
-  moderators = db.relationship('User', secondary=user_topic_association, lazy='subquery', backref=db.backref('Topic', lazy=True))
 
   def __init__(self, topicname, user_id):
     self.topicname = topicname.title()

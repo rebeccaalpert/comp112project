@@ -5,7 +5,7 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm, ProfileForm
-from models import db, User, Topic, Message, PrivateMessage, Language, BannedUser
+from models import db, User, Topic, Message, PrivateMessage, Language, BannedUser, Moderator
 from sqlalchemy import update
 import datetime
 import math
@@ -609,9 +609,9 @@ def new_topic(message):
 	print(message['data']['user'])
 	user = User.query.filter_by(email=message['data']['user']).first()
 	room = Topic.query.filter_by(topicname=session.get('room')).first()
-	room.moderators.append(user)
-	db.session.add(room)
-	db.session.commit()
+	#room.moderators.append(user)
+	#db.session.add(room)
+	#db.session.commit()
 
 @socketio.on('removed_moderator', namespace='/chat')
 def new_topic(message):
@@ -619,20 +619,27 @@ def new_topic(message):
 	print(message['data']['user'])
 	user = User.query.filter_by(email=message['data']['user']).first()
 	room = Topic.query.filter_by(topicname=session.get('room')).first()
-	room.moderators.remove(user)
-	db.session.commit()
+	mod = Moderator
+	#room.moderators.remove(user)
+	#db.session.commit()
 
 @socketio.on('delete_my_chatroom', namespace='/chat')
 def delete_my_chatroom(message):
 	print("delete_my_chatroom\n")
 	print("This is message ")
 	print(message)
-	id = message['data']['id']
+	topic_id = message['data']['id']
 	parent = message['data']['parent']
-	topic = Topic.query.filter_by(uid=id).delete()
-	user = User.query.filter_by(email=session.get('email')).first()
-	room = Topic.query.filter_by(topicname=session.get('room')).first()
-	room.moderators.remove(user)
+	topic = Topic.query.filter_by(uid=topic_id).first()
+	print("hi")
+	for room in BannedUser.query.filter_by(topic_id=topic_id):
+		print(room.topic_id)
+		db.session.delete(room)
+	print("do")
+	for mod in Moderator.query.filter_by(topic_id=topic_id):
+		print(mod.topic_id)
+		db.session.delete(mod)
+	db.session.delete(topic)
 	db.session.commit()
 	emit('delete_my_chatroom', {'msg': parent}, broadcast=True)
 

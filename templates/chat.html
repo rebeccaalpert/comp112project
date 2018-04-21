@@ -141,6 +141,7 @@
     });
 
     socket.on('status', function(data) {
+      console.log(data);
       $('#chat').append('<li class="message">' + data.msg + '</li>');
       if (data.msg.includes("has entered") && $('.user:contains("' + data.user + '")').length == 0) {
         $('#active-users').append('<li class="user">' + data.user + '</li>');
