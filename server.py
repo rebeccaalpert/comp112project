@@ -599,8 +599,9 @@ def new_topic(message):
 	print(message['data']['room'])
 	emit('update_topics', {'msg': { 'room': message['data']['room'] }}, broadcast=True)
 	room = Topic.query.filter_by(topicname=session.get('room')).first()
-	room.moderators.append(user)
+	mod = Moderator(user.uid, room.uid)
 	db.session.add(room)
+	db.session.add(mod)
 	db.session.commit()
 
 @socketio.on('added_moderator', namespace='/chat')
@@ -609,9 +610,9 @@ def new_topic(message):
 	print(message['data']['user'])
 	user = User.query.filter_by(email=message['data']['user']).first()
 	room = Topic.query.filter_by(topicname=session.get('room')).first()
-	#room.moderators.append(user)
-	#db.session.add(room)
-	#db.session.commit()
+	mod = Moderator(user.uid, room.uid)
+	db.session.add(mod)
+	db.session.commit()
 
 @socketio.on('removed_moderator', namespace='/chat')
 def new_topic(message):
@@ -619,9 +620,10 @@ def new_topic(message):
 	print(message['data']['user'])
 	user = User.query.filter_by(email=message['data']['user']).first()
 	room = Topic.query.filter_by(topicname=session.get('room')).first()
-	mod = Moderator
-	#room.moderators.remove(user)
-	#db.session.commit()
+	for mod in Moderator.query.filter_by(user_id=user.id):
+		if mod.topic_id == room.id:
+			db.session.delete(mod)
+			db.session.commit()
 
 @socketio.on('delete_my_chatroom', namespace='/chat')
 def delete_my_chatroom(message):
