@@ -239,6 +239,7 @@ def chat():
 	users = User.query.all()
 	messages = Message.query.all()
 	banned_from = [];
+	moderated_rooms = [];
 
 	session['room'] = 'General'
 
@@ -246,6 +247,7 @@ def chat():
 		return redirect(url_for('signin'))
 
 	user = User.query.filter_by(email = session['email']).first()
+
 	if BannedUser.query.filter_by(user_id=user.uid).first() is not None:
 		flagged_rooms = BannedUser.query.filter_by(user_id=user.uid).all()
 		for room in flagged_rooms:
@@ -254,13 +256,22 @@ def chat():
 				print(room.topic_id)
 				banned_from.append(room.topic_id)
 
+	if Moderator.query.filter_by(user_id=user.uid).first() is not None:
+		print("mod exists")
+		mod_for = Moderator.query.filter_by(user_id=user.uid).all()
+		for room in mod_for:
+			print("mod")
+			print(room.topic_id)
+			if room.topic_id != 1:
+				moderated_rooms.append(Topic.query.filter_by(uid=room.topic_id).first().topicname)
+
 	if user is None:
 		return redirect(url_for('signin'))
 	else:
 		session['uid'] = user.uid
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from)
+				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -270,7 +281,7 @@ def chat():
 				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
-			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from)
+			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms)
 
 @app.route('/chat/<chatroom_title>')
 def show_chatroom(chatroom_title):
@@ -279,10 +290,13 @@ def show_chatroom(chatroom_title):
 	users = User.query.all()
 	messages = Message.query.all()
 	banned_from = []
+	moderated_rooms = []
+	banned_users = []
 
 	topic = Topic.query.filter_by(topicname = chatroom_title).first()
 
 	user = User.query.filter_by(email = session['email']).first()
+
 	if BannedUser.query.filter_by(user_id=user.uid).first() is not None:
 		flagged_rooms = BannedUser.query.filter_by(user_id=user.uid).all()
 		for room in flagged_rooms:
@@ -290,6 +304,22 @@ def show_chatroom(chatroom_title):
 				print("banned from:")
 				print(room.topic_id)
 				banned_from.append(room.topic_id)
+
+	if BannedUser.query.filter_by(topic_id=topic.uid).first() is not None:
+		users = BannedUser.query.filter_by(topic_id=topic.uid).all()
+		for u in users:
+			if u.times_flagged >= 5 and u.topic_id != 1:
+				print(u.topic_id)
+				banned_users.append(User.query.filter_by(uid=u.user_id).first().email)
+
+	if Moderator.query.filter_by(user_id=user.uid).first() is not None:
+		print("mod exists")
+		mod_for = Moderator.query.filter_by(user_id=user.uid).all()
+		for room in mod_for:
+			print("mod")
+			print(room.topic_id)
+			if room.topic_id != 1:
+				moderated_rooms.append(Topic.query.filter_by(uid=room.topic_id).first().topicname)
 
 	if topic is None:
 		return redirect(url_for('chat'))
@@ -309,7 +339,7 @@ def show_chatroom(chatroom_title):
 	else:
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from)
+				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms, banned_users=banned_users)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -319,7 +349,7 @@ def show_chatroom(chatroom_title):
 				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
-			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from)
+			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms, banned_users=banned_users)
 
 def convertToNumber (s):
     return int.from_bytes(s.encode(), 'little')
@@ -509,6 +539,31 @@ def chat_message(message):
 	db.session.refresh(msg)
 	db.session.commit()
 
+@socketio.on('banned', namespace='/chat')
+def banned(message):
+	print("ban")
+	print(message)
+	banned_user = User.query.filter_by(email=message['data']['user']).first()
+	room = Topic.query.filter_by(topicname=message['data']['room']).first()
+	banned_user = BannedUser(banned_user.uid, room.uid)
+	banned_user.times_flagged = 500;
+	banFromRoom(banned_user.user_id, room.uid)
+	db.session.add(banned_user)
+	db.session.commit()
+
+@socketio.on('unbanned', namespace='/chat')
+def unbanned(message):
+	print("unban")
+	print(message)
+	unbanned_user = User.query.filter_by(email=message['data']['user']).first()
+	room = Topic.query.filter_by(topicname=message['data']['room']).first()
+	if BannedUser.query.filter_by(user_id=unbanned_user.uid).first() is not None:
+		for u in BannedUser.query.filter_by(user_id=unbanned_user.uid):
+			if u.topic_id == room.uid:
+				emit('unbanned', {'user': unbanned_user.email, 'room': room.topicname}, broadcast=True)
+				db.session.delete(u)
+				db.session.commit()
+
 @socketio.on('flagged', namespace='/chat')
 def flagged(message):
 	room = session.get('room')
@@ -598,9 +653,11 @@ def new_topic(message):
 	print(message)
 	print(message['data']['room'])
 	emit('update_topics', {'msg': { 'room': message['data']['room'] }}, broadcast=True)
-	room = Topic.query.filter_by(topicname=session.get('room')).first()
-	mod = Moderator(user.uid, room.uid)
+	room = Topic(message['data']['room'], user.uid)
 	db.session.add(room)
+	db.session.commit()
+	room = Topic.query.filter_by(topicname=message['data']['room']).first()
+	mod = Moderator(user.uid, room.uid)
 	db.session.add(mod)
 	db.session.commit()
 

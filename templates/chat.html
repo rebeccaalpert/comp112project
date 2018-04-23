@@ -8,6 +8,9 @@
           <div class="panel panel-info">
             <div class="panel-heading">
               <strong><span class="glyphicon glyphicon-list"></span> Logged in as: <span id="user-name">{{ session['email'] }}</strong>
+              {% if session['room'] in moderated_rooms %}
+              <span class="hidden admin">Admin</span>
+              {% endif %}
             </div>
           </div>
           <div class="panel panel-info">
@@ -17,16 +20,37 @@
             <ul id="active-users">
               {% for user in users %}
                 {% if user.topic_name == session['room'] %}
-                  {% if user.email != session['email'] %}
-                    <li class="user">{{ user.email }} <a class="add_moderator">[+]</a><a class="remove_moderator hidden">[-]</a></li>
+                  {% if session['room'] in moderated_rooms %}
+                    <li class="user">{{ user.email }} <a class="ban">[ban]</a></li>
                   {% endif %}
-                  {% if user.email == session['email'] %}
+                  {% if session['room'] not in moderated_rooms %}
                     <li class="user">{{ user.email }}</li>
                   {% endif %}
                 {% endif %}
               {% endfor %}
             </ul>
           </div>
+          {% if session['room'] in moderated_rooms and banned_users %}
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong>Banned Users</strong>
+            </div>
+            <ul id="banned-users">
+              {% for user in banned_users %}
+                <li class="user">{{ user }} <a class="unban">[unban]</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+          {% if session['room'] in moderated_rooms and not banned_users %}
+          <div class="panel panel-info hidden">
+            <div class="panel-heading">
+              <strong>Banned Users</strong>
+            </div>
+            <ul id="banned-users">
+            </ul>
+          </div>
+          {% endif %}
           <div class="panel panel-info">
             <div class="panel-heading">
               <strong>Private Chats</strong>
@@ -49,7 +73,7 @@
                 {% if topic.topicname %}
                   {% if topic.uid not in banned_from %}
                   <li id="{{topic.topicname}}" class="topic"><a href="/chat/{{ topic.topicname }}">{{ topic.topicname }}</a>
-                    {% if topic.user_id == session['uid'] %}
+                    {% if topic.user_id == session['uid'] or topic.uid in moderated_rooms %}
                       <span id="{{topic.uid}}" class="remove_chatroom_btn" onclick="remove_chatroom(this)"><span class="glyphicon glyphicon-remove-sign" style="padding-left: 10px;"></span></span>
                     {% endif %}
                   {% endif %}
@@ -144,9 +168,15 @@
       console.log(data);
       $('#chat').append('<li class="message">' + data.msg + '</li>');
       if (data.msg.includes("has entered") && $('#active-users .user:contains("' + data.user + '")').length == 0) {
-        $('#active-users').append('<li class="user">' + data.user + '</li>');
+        if ($(".admin").length != 0 && data.user != $("#user-name").text()) {
+          $('#active-users').append('<li class="user">' + data.user + ' <a class="ban">[ban]</a></li>');
+            addBanClick($(".ban"));
+            addAddModClick($(".add_moderator"));
+        } else {
+          $('#active-users').append('<li class="user">' + data.user + '</li>');
+        }
       } else if (data.msg.includes("has left")) {
-        $('.user:contains("' + data.user + '")').remove();
+        $('#active-users .user:contains("' + data.user + '")').remove();
       }
       $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
     });
@@ -174,9 +204,43 @@
     socket.on('banned', function(data) {
       console.log("banned:");
       console.log(data);
-      if (room == data['room'] && $("#user-name").text() == data['user']) {
+      console.log(data['user']);
+      var user = (data['user']).toString();
+      var li = '<li class="user">' + user + ' <a class="unban">[unban]</a></li>';
+      if (room === data['room'] && $("#user-name").text() === data['user']) {
         socket.emit('left', {});
         window.location.replace("/chat");
+      }
+      if (room === data['room'] && $("#user-name").text() !== data['user']) {
+        if ($("#banned-users").parent().hasClass("hidden")) {
+          console.log("hidden");
+          console.log($("#banned-users"));
+          $("#banned-users").parent().removeClass("hidden");
+          console.log($("#banned-users").length);
+          console.log(li);
+          $("#banned-users").append(li);
+          addUnbanClick($(".unban"));
+        } else {
+          $("#banned-users").append(li);
+          addUnbanClick($(".unban"));
+        }
+      }
+    });
+
+    socket.on('unbanned', function(data) {
+      console.log("unbanned");
+      console.log(data);
+      var room = data['room'];
+      if (room == data['room'] && $("#user-name").text() == data['user']) {
+        console.log("match");
+        $('#chat-rooms').append('<li id="' + titleCase(room) + '" class="topic"><a href="/chat/' + titleCase(room) + '">' + titleCase(room) + '</a></li>');
+      } else {
+        if ($("#banned-users li").length == 0) {
+          console.log("hi");
+          $("#banned-users").parent().addClass("hidden");
+        } else {
+          $('#banned-users .user:contains("' + user + '")').remove();
+        }
       }
     });
 
@@ -199,6 +263,26 @@
 
     $("#sendMessage").on("click", function () {
         sendMessage();
+    });
+
+    $(".unban").on("click", function () {
+        var user = $(this).parent().text().replace("[unban]", "").trim();
+        var room = $("#chatroom-name").text();
+        socket.emit('unbanned', { data: { user: user, room: room} });
+        console.log($("#banned-users li").length);
+        if ($("#banned-users li").length === 0) {
+          $("#banned-users").parent().addClass("hidden");
+        } else {
+          console.log("hi");
+          $('#banned-users .user:contains("' + user + '")').remove();
+        }
+    });
+
+    $(".ban").on("click", function() {
+        var user = $(this).parent().text().replace("[ban]", "").replace("[+]", "").replace("[-]", "").trim();
+        console.log(user);
+        var room = $("#chatroom-name").text();
+        socket.emit('banned', { data: { user: user, room: room} });
     });
 
     $('#submit').on("click", function() {
@@ -282,6 +366,39 @@
         li.addClass("down");
       } 
     });
+   }
+
+   function addUnbanClick(e) {
+    e.on("click", function() {
+        var user = $(this).parent().text().replace("[unban]", "").trim();
+        var room = $("#chatroom-name").text();
+        socket.emit('unbanned', { data: { user: user, room: room} });
+        if ($("#banned-users li").length == 0) {
+          console.log("hi");
+          $("#banned-users").parent().addClass("hidden");
+        } else {
+          $('#banned-users .user:contains("' + user + '")').remove();
+        }
+    });
+   }
+
+   function addBanClick(e) {
+      e.on("click", function() {
+        var user = $(this).parent().text().replace("[ban]", "").replace("[+]", "").replace("[-]", "").trim();
+        console.log(user);
+        var room = $("#chatroom-name").text();
+        socket.emit('banned', { data: { user: user, room: room} });
+      });
+   }
+  
+   function addAddModClick(e) {
+      e.on("click", function() {
+        $(this).parent().children(".remove_moderator").removeClass("hidden");
+        var user = $(this).parent().text().replace("[+]", "").replace("[-]", "").trim();
+        console.log(user);
+        add_mod = $(this).detach();
+        socket.emit('added_moderator', {data: { user: user}});
+      });
    }
 
     remove_chatroom = function(elem) {
