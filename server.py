@@ -698,6 +698,9 @@ def delete_my_chatroom(message):
 	for mod in Moderator.query.filter_by(topic_id=topic_id):
 		print(mod.topic_id)
 		db.session.delete(mod)
+	for message in Message.query.filter_by(topic_name=topic.topicname):
+		print(message.text)
+		db.session.delete(message)
 	db.session.delete(topic)
 	db.session.commit()
 	emit('delete_my_chatroom', {'msg': parent}, broadcast=True)
