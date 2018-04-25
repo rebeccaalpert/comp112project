@@ -33,6 +33,23 @@ class Language(db.Model):
     self.name = name
     self.code = code
 
+class Cache(db.Model):
+  uid = db.Column(db.Integer, primary_key=True)
+  source_code = db.Column(db.String(3))
+  target_code = db.Column(db.String(3))
+  original_text = db.Column(db.String(4096))
+  translated_text = db.Column(db.String(4096))
+  msg_id = db.Column(db.Integer)
+  match = db.Column(db.Integer)
+
+  def __init__(self, source, target, text, translated, msg_id, match):
+    self.source_code = source
+    self.target_code = target
+    self.original_text = text
+    self.translated_text = translated
+    self.msg_id = msg_id
+    self.match = match
+
 class User(db.Model):
   uid = db.Column(db.Integer, primary_key = True)
   firstname = db.Column(db.String(100))

@@ -4,6 +4,7 @@ monkey.patch_all()
 from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
+from flask import jsonify
 from forms import SignupForm, SigninForm, TopicForm, ProfileForm
 from models import db, User, Topic, Message, PrivateMessage, Language, BannedUser, Moderator
 from sqlalchemy import update
@@ -11,6 +12,7 @@ import datetime
 import math
 import requests
 import json
+import translator as tr
 
 app = Flask(__name__)
 app.debug = True
@@ -473,7 +475,6 @@ def signout():
 	session.pop('room', None)
 	return redirect(url_for('signin'))
 
-
 @app.route('/user_language/<email>', methods=['GET', 'POST'])
 def resolveUserLanguage(email):
 	if 'email' not in session:
@@ -488,6 +489,24 @@ def resolveUserLanguage(email):
 		if lang:
 			return lang.code
 		return "-1"
+
+@app.route('/translate', methods=['GET', 'POST'])
+def translate():
+	if request.method == 'POST':
+		data = request.get_json()
+
+		try:
+			user = User.query.filter_by(email=data['email']).first()
+			lang = Language.query.filter_by(uid=user.lang).first()
+
+			if user is None:
+				return redirect(url_for('signin'))
+
+			return jsonify(result=tr.translate(data['text'], lang.code,
+						   						"", data['msg_id']))
+
+		except KeyError:
+			return {'code': 500}
 
 @socketio.on('joined', namespace='/chat')
 def joined(message):

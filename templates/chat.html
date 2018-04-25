@@ -146,6 +146,14 @@
     var add_mod;
     var count = -1;
 
+    // checking if local storage is supported by the browser
+    var testStorage;
+    if (typeof(Storage) !== "undefined") {
+      testStorage = 1;
+    } else {
+      testStorage = 0;
+    }
+
     key = 'trnsl.1.1.20180323T002815Z.931efcfa06f08dc6.585e129a89a9ad92ac700de57bf10c55bd482438';
     $('#submit').addClass('btn').addClass('btn-info').css('margin-top', '1em');
     $('#topicname').addClass('form-control');
@@ -194,6 +202,8 @@
       $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
       addFlagClick($(".flag"));
       addArrowClick($(".unmute"));
+      // workaround should be removed in the future release
+      location.reload();
     });
 
     socket.on('update_topics', function(data) {
@@ -430,27 +440,28 @@
         actual_msg = $("#" + el_id + "-actual_msg");
       }
 
-      console.log(trans_holder);
-      console.log(actual_msg);
-
       if(trans_holder.text() != "") {
           trans_holder.html("");
         } else {
           user_email = $('#user-name').text();
           // add the loader class to the div node. (start loader)
           $(elem).parent().children().last().addClass('loader');
-          $.when(
-            getUserLang(user_email),
-            detectLang(actual_msg.text()),
-          ).then(function(to, from) {
-            direction = concatString(from[0].lang, to[0]);
-            
-            translate(actual_msg.text(), direction, trans_holder);
 
-          }).then(function() {
-            // Remove the loader class from the div node. (stop loader)
-            $(elem).parent().children().last().removeClass('loader');
-          });
+          // check localstorage first
+          if (testStorage) {
+            var trans = get_trans_text(el_id);
+
+            if (trans != null) {
+              // Remove the loader class from the div node. (stop loader)
+              $(elem).parent().children().last().removeClass('loader');
+              trans_holder.html(trans);
+            } else {
+              translate(user_email, actual_msg.text(), el_id, trans_holder, elem);
+            }
+            
+          } else {
+            translate(user_email, actual_msg.text(), el_id, trans_holder, elem);
+          }
         }
     }
 
@@ -482,11 +493,36 @@
       return $.get('https://translate.yandex.net/api/v1.5/tr.json/detect', { key: key, text: text });
     }
 
-    function translate(text, direction, output) {
-       console.log(text + " " + direction);
-      $.get('https://translate.yandex.net/api/v1.5/tr.json/translate', { key: key, text: text, lang: direction }, function(data) {
-          output.html(data.text[0]);
-        });
+    function translate(email, text, msg_id, output, loader) {
+      
+      if (msg_id == null) {
+        msg_id = -1;
+      }
+
+      console.log({ email: email,text: text, msg_id: msg_id});
+      $.ajax({
+        url:'http://' + document.domain + ':' + location.port + '/translate',
+        type:"POST",
+        data: JSON.stringify({ email: email,text: text, msg_id: msg_id}),
+        contentType:"application/json; charset=utf-8",
+        dataType:"json",
+        success: function(data){
+          // Remove the loader class from the div node. (stop loader)
+          $(loader).parent().children().last().removeClass('loader');
+          // output the data
+          output.html(data.result.lang);
+          //save the data to localStorage
+          store_trans_text(msg_id, data.result.lang);
+        }
+      });
+    }
+
+    function store_trans_text(msg_id, text) {
+      localStorage.setItem(msg_id, text);
+    }
+
+    function get_trans_text(msg_id) {
+      return localStorage.getItem(msg_id);
     }
 
     function concatString(from, to) {
