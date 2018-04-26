@@ -539,7 +539,7 @@ def resolveUserLanguage(email):
 	if 'email' not in session:
 		return redirect(url_for('signin'))
 
-	user = User.query.filter_by(email = email).first()
+	user = User.query.filter_by(username = email).first()
 
 	if user is None:
 		return redirect(url_for('signin'))
@@ -555,7 +555,7 @@ def translate():
 		data = request.get_json()
 
 		try:
-			user = User.query.filter_by(email=data['email']).first()
+			user = User.query.filter_by(username=data['email']).first()
 			lang = Language.query.filter_by(uid=user.lang).first()
 
 			if user is None:
