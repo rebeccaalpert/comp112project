@@ -55,6 +55,7 @@ class User(db.Model):
   firstname = db.Column(db.String(100))
   lastname = db.Column(db.String(100))
   email = db.Column(db.String(120), unique=True)
+  username = db.Column(db.String(120), unique=True)
   pwdhash = db.Column(db.String(128))
   topics = db.relationship('Topic', backref='User', lazy='dynamic')
   messages = db.relationship('Message', backref='User', lazy='dynamic')
@@ -63,11 +64,12 @@ class User(db.Model):
   random = db.Column(db.String(120))
   lang = db.Column(db.Integer, db.ForeignKey(Language.uid))
   
-  def __init__(self, firstname, lastname, email, password, topics, messages, lang):
+  def __init__(self, firstname, lastname, email, username, password, topics, messages, lang):
     self.firstname = firstname.title()
     self.lastname = lastname.title()
     self.lang = lang
     self.email = email.lower()
+    self.username = username
     self.random = ""
     self.set_password(password)
     
@@ -101,6 +103,7 @@ class Message(db.Model):
   posted = db.Column(db.DateTime, default = datetime.now)
   user_id = db.Column(db.Integer, db.ForeignKey(User.uid))
   user_email = db.Column(db.String(128))
+  username = db.Column(db.String(128))
   topic_id = db.Column(db.Integer, db.ForeignKey(Topic.uid))
   topic_name = db.Column(db.String(100))
   score = db.Column(db.Integer)
@@ -109,6 +112,7 @@ class Message(db.Model):
     self.text = text
     self.user_id = user_id
     self.user_email = user_email
+    self.username = User.query.filter_by(email=user_email).first().username
     self.topic_id = topic_id
     self.topic_name = topic
     self.score = score
