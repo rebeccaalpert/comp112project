@@ -14,10 +14,10 @@
             </div>
           </div>
           <div class="panel panel-info">
-            <div class="panel-heading">
-              <strong>Active Users in Current Room</strong>
+            <div class="panel-heading down" data-toggle="collapse" data-target="#active-users">
+              <strong>Active Users in Current Room</strong> <span class="glyphicon glyphicon glyphicon-chevron-down" aria-hidden="true"></span><span class="glyphicon glyphicon-chevron-up hidden" aria-hidden="true"></span>
             </div>
-            <ul id="active-users">
+            <ul id="active-users" class="collapse">
               {% for user in users %}
                 {% if user.topic_name == session['room'] %}
                   {% if session['room'] in moderated_rooms %}
@@ -32,10 +32,10 @@
           </div>
           {% if session['room'] in moderated_rooms and banned_users %}
           <div class="panel panel-info">
-            <div class="panel-heading">
-              <strong>Banned Users</strong>
+            <div class="panel-heading down" data-toggle="collapse" data-target="#banned-users">
+              <strong>Banned Users</strong> <span class="glyphicon glyphicon glyphicon-chevron-down" aria-hidden="true"></span><span class="glyphicon glyphicon-chevron-up hidden" aria-hidden="true"></span>
             </div>
-            <ul id="banned-users">
+            <ul id="banned-users" class="collapse">
               {% for user in banned_users %}
                 <li class="user">{{ user }} <a class="unban">[unban]</a></li>
               {% endfor %}
@@ -44,18 +44,18 @@
           {% endif %}
           {% if session['room'] in moderated_rooms and not banned_users %}
           <div class="panel panel-info hidden">
-            <div class="panel-heading">
-              <strong>Banned Users</strong>
+            <div class="panel-heading down collapse" data-toggle="collapse" data-target="#banned-users">
+              <strong>Banned Users</strong> <span class="glyphicon glyphicon glyphicon-chevron-down" aria-hidden="true"></span><span class="glyphicon glyphicon-chevron-up hidden" aria-hidden="true"></span>
             </div>
-            <ul id="banned-users">
+            <ul id="banned-users" class="collapse">
             </ul>
           </div>
           {% endif %}
           <div class="panel panel-info">
-            <div class="panel-heading">
-              <strong>Private Chats</strong>
+            <div class="panel-heading down" data-toggle="collapse" data-target="#private-chat">
+              <strong>Private Chats</strong> <span class="glyphicon glyphicon glyphicon-chevron-down" aria-hidden="true"></span><span class="glyphicon glyphicon-chevron-up hidden" aria-hidden="true"></span>
             </div>
-            <ul id="active-users">
+            <ul id="private-chat" class="collapse">
               {% for user in users %}
                 {% if user.email != session['email'] %}
                   <li class="user"><a href="/private_chat/{{ user.email }}">
@@ -65,10 +65,10 @@
             </ul>
           </div>
           <div class="panel panel-info">
-            <div class="panel-heading">
-              <strong>Available Chatrooms</strong>
+            <div class="panel-heading down" data-toggle="collapse" data-target="#chat-rooms">
+              <strong>Available Chatrooms</strong> <span class="glyphicon glyphicon glyphicon-chevron-down" aria-hidden="true"></span><span class="glyphicon glyphicon-chevron-up hidden" aria-hidden="true"></span>
             </div>
-            <ul id="chat-rooms">
+            <ul id="chat-rooms" class="collapse">
               {% for topic in topics %}
                 {% if topic.topicname %}
                   {% if topic.uid not in banned_from %}
@@ -86,7 +86,7 @@
             <div class="panel-heading">
               <strong>Add a Chatroom</strong>
             </div>
-            <div class="container-fluid">
+            <div class="container-fluid" id="add-chatroom">
               {% for message in form.topicname.errors %}
               <div class="alert alert-danger margin-top">{{ message }}</div>
               {% endfor %}
@@ -343,6 +343,19 @@
         li.children(".glyphicon-chevron-down").removeClass("hidden");
         li.children(".glyphicon-chevron-up").addClass("hidden");
         li.addClass("down");
+      }
+    });
+
+    $('.panel-heading').on('click', function() {
+      var panel = $(this);
+      if (panel.hasClass("down")) {
+        panel.children(".glyphicon-chevron-up").removeClass("hidden");
+        panel.children(".glyphicon-chevron-down").addClass("hidden");
+        panel.removeClass("down");
+      } else {
+        panel.children(".glyphicon-chevron-down").removeClass("hidden");
+        panel.children(".glyphicon-chevron-up").addClass("hidden");
+        panel.addClass("down");
       }
     });
 
