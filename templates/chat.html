@@ -99,6 +99,8 @@
                 
                 {{ form.submit }}
               </form>
+
+              <button class="btn btn-info" type="button" id="newGroup">CREATE INTEREST GROUP</button>
             </div>
           </div>
         </div>
@@ -343,6 +345,10 @@
         li.children(".glyphicon-chevron-up").addClass("hidden");
         li.addClass("down");
       }
+    });
+
+    $("#newGroup").on("click", function () {
+      window.location.replace("/random_setting");
     });
 
    function addFlagClick(e) {
