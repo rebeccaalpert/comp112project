@@ -25,7 +25,6 @@ class SignupForm(Form):
   lastname = TextField("Last name",  [validators.Required("Please enter your last name.")])
   language = SelectField('Language', coerce=int)
   email = TextField("Email",  [validators.Required("Please enter your email address."), validators.Email("Please enter your email address.")])
-  username = TextField("Username",  [validators.Required("Please enter your username.")])
   password = PasswordField('Password', [validators.Required("Please enter a password.")])
   submit = SubmitField("CREATE ACCOUNT")
 
