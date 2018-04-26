@@ -20,7 +20,7 @@ app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'nuttertools'
 socketio = SocketIO(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/development'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/development'
 active_list = set()
 
 db.init_app(app)
