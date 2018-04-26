@@ -809,6 +809,54 @@ def new_random(message):
     emit('new_random', {'partner': partner_email})
     emit('redirect', '/random_setting')
 
+@socketio.on('new_interest_group', namespace='/random_chat')
+def new_interest_group(message):
+    print("message = ", message)
+    print(message['data']['message'])
+    myEmail = session.get('email')
+    user = User.query.filter_by(email=myEmail).first()
+    others = User.query.filter(User.email != myEmail).all()
+    interests = user.interests
+    interests_set = set()
+    for i in interests:
+        interests_set.add(i.interest_name.lower())
+
+    same_interests = []
+
+    topic_name = ""
+
+    for i in interests_set:
+        count = 0
+        for other in others:
+            for other_i in other.interests:
+                if other_i.interest_name.lower() == i:
+                    count += 1;
+        if count > 1:
+            heappush(same_interests, (-count, i))
+
+    print(same_interests)
+
+    while len(same_interests) > 0:
+        interest = heappop(same_interests)[1]
+        print(interest)
+        if Topic.query.filter_by(topicname=interest).first() != None:
+            continue
+        topic_name = interest
+        room = Topic(topic_name, user.uid)
+        db.session.add(room)
+        db.session.commit()
+        room = Topic.query.filter_by(topicname=topic_name).first()
+        mod = Moderator(user.uid, room.uid)
+        db.session.add(mod)
+        db.session.commit()
+        break
+
+    if topic_name == "":
+        emit('redirect', '/random_setting')
+    else:
+        emit('redirect', '/chat/' + room.topicname)
+
+
 @socketio.on('left', namespace='/chat')
 def left(message):
     room = session.get('room')
