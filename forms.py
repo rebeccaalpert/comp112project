@@ -25,6 +25,7 @@ class SignupForm(Form):
   lastname = TextField("Last name",  [validators.Required("Please enter your last name.")])
   language = SelectField('Language', coerce=int)
   email = TextField("Email",  [validators.Required("Please enter your email address."), validators.Email("Please enter your email address.")])
+  username = TextField("Username",  [validators.Required("Please enter your username.")])
   password = PasswordField('Password', [validators.Required("Please enter a password.")])
   submit = SubmitField("CREATE ACCOUNT")
 
@@ -35,12 +36,13 @@ class SignupForm(Form):
     if not Form.validate(self):
       return False
     
-    user = User.query.filter_by(email = self.email.data.lower()).first()
-    if user:
-      self.email.errors.append("That email is already taken")
-      return False
+    u_email = User.query.filter_by(email = self.email.data.lower()).first()
+    u_username = User.query.filter_by(username = self.username.data).first()
+    if u_email is None and u_username is None:
+        return True
     else:
-      return True
+      self.email.errors.append("That email or username is already taken.")
+      return False
 
 class RandomForm(Form):
   interest = TextField("Enter a new interest", [validators.Required("Please enter an interest.")])
