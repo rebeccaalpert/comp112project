@@ -5,12 +5,16 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
 from forms import SignupForm, SigninForm, TopicForm, ProfileForm, RandomForm
-from models import db, User, Topic, Message, PrivateMessage, Language, Interest, RandomMessage
+from models import db, User, Topic, Message, PrivateMessage, Language, BannedUser, Moderator, Interest, RandomMessage
 from sqlalchemy import update
 import datetime
 import math
 from heapq import heappush, heappop
 import time
+from flask import jsonify
+import requests
+import json
+import translator as tr
 
 app = Flask(__name__)
 app.debug = True
@@ -239,6 +243,8 @@ def chat():
 	topics = Topic.query.all()
 	users = User.query.all()
 	messages = Message.query.all()
+	banned_from = [];
+	moderated_rooms = [];
 
 	session['room'] = 'General'
 
@@ -247,13 +253,30 @@ def chat():
 
 	user = User.query.filter_by(email = session['email']).first()
 
+	if BannedUser.query.filter_by(user_id=user.uid).first() is not None:
+		flagged_rooms = BannedUser.query.filter_by(user_id=user.uid).all()
+		for room in flagged_rooms:
+			if room.times_flagged >= 5 and room.topic_id != 1:
+				print("banned from:")
+				print(room.topic_id)
+				banned_from.append(room.topic_id)
+
+	if Moderator.query.filter_by(user_id=user.uid).first() is not None:
+		print("mod exists")
+		mod_for = Moderator.query.filter_by(user_id=user.uid).all()
+		for room in mod_for:
+			print("mod")
+			print(room.topic_id)
+			if room.topic_id != 1:
+				moderated_rooms.append(Topic.query.filter_by(uid=room.topic_id).first().topicname)
+
 	if user is None:
 		return redirect(url_for('signin'))
 	else:
 		session['uid'] = user.uid
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -263,7 +286,7 @@ def chat():
 				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
-			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms)
 
 @app.route('/chat/<chatroom_title>')
 def show_chatroom(chatroom_title):
@@ -271,10 +294,42 @@ def show_chatroom(chatroom_title):
 	topics = Topic.query.all()
 	users = User.query.all()
 	messages = Message.query.all()
+	banned_from = []
+	moderated_rooms = []
+	banned_users = []
 
 	topic = Topic.query.filter_by(topicname = chatroom_title).first()
 
+	user = User.query.filter_by(email = session['email']).first()
+
+	if BannedUser.query.filter_by(user_id=user.uid).first() is not None:
+		flagged_rooms = BannedUser.query.filter_by(user_id=user.uid).all()
+		for room in flagged_rooms:
+			if room.times_flagged >= 5 and room.topic_id != 1:
+				print("banned from:")
+				print(room.topic_id)
+				banned_from.append(room.topic_id)
+
+	if BannedUser.query.filter_by(topic_id=topic.uid).first() is not None:
+		users = BannedUser.query.filter_by(topic_id=topic.uid).all()
+		for u in users:
+			if u.times_flagged >= 5 and u.topic_id != 1:
+				print(u.topic_id)
+				banned_users.append(User.query.filter_by(uid=u.user_id).first().email)
+
+	if Moderator.query.filter_by(user_id=user.uid).first() is not None:
+		print("mod exists")
+		mod_for = Moderator.query.filter_by(user_id=user.uid).all()
+		for room in mod_for:
+			print("mod")
+			print(room.topic_id)
+			if room.topic_id != 1:
+				moderated_rooms.append(Topic.query.filter_by(uid=room.topic_id).first().topicname)
+
 	if topic is None:
+		return redirect(url_for('chat'))
+
+	if topic.uid in banned_from:
 		return redirect(url_for('chat'))
 
 	session['room'] = topic.topicname
@@ -289,7 +344,7 @@ def show_chatroom(chatroom_title):
 	else:
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+				return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms, banned_users=banned_users)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -299,7 +354,7 @@ def show_chatroom(chatroom_title):
 				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
-			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages)
+			return render_template('chat.html', form=form, topics=topics, users=users, messages=messages, banned_from=banned_from, moderated_rooms=moderated_rooms, banned_users=banned_users)
 
 def convertToNumber (s):
     return int.from_bytes(s.encode(), 'little')
@@ -470,7 +525,6 @@ def signout():
 	session.pop('room', None)
 	return redirect(url_for('signin'))
 
-
 @app.route('/user_language/<email>', methods=['GET', 'POST'])
 def resolveUserLanguage(email):
 	if 'email' not in session:
@@ -485,6 +539,24 @@ def resolveUserLanguage(email):
 		if lang:
 			return lang.code
 		return "-1"
+
+@app.route('/translate', methods=['GET', 'POST'])
+def translate():
+	if request.method == 'POST':
+		data = request.get_json()
+
+		try:
+			user = User.query.filter_by(email=data['email']).first()
+			lang = Language.query.filter_by(uid=user.lang).first()
+
+			if user is None:
+				return redirect(url_for('signin'))
+
+			return jsonify(result=tr.translate(data['text'], lang.code,
+						   						"", data['msg_id']))
+
+		except KeyError:
+			return {'code': 500}
 
 @socketio.on('joined', namespace='/chat')
 def joined(message):
@@ -523,23 +595,96 @@ def joined(message):
 
 @socketio.on('message', namespace='/chat')
 def chat_message(message):
-	print("message = ", message)
-	print(message['data']['message'])
 	email = session.get('email')
 	room = session.get('room')
 	user = User.query.filter_by(email=email).first()
 	uid = user.uid
-	emit('message', {'text': message['data']['message'], 'author': email, 'time': ' just now'}, room=room)
 	username = user.email
 	room = Topic.query.filter_by(topicname=room).first()
 	topic_uid = room.uid
 	topic_name = room.topicname
-	msg = Message(message['data']['message'], uid, username, topic_uid, topic_name)
+	message_text = message['data']['message']
+	print(message_text)
+	r = requests.post("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=AIzaSyAj5W2revGlFYriELZLCAXa5RvyA8FMUUA", data='{"comment": {"text": "' + message_text + '"},"languages": ["en"], "requestedAttributes": {"TOXICITY":{}}}')
+	print(r.text)
+	json = r.json()
+	score = json['attributeScores']['TOXICITY']['spanScores'][0]['score']['value']
+	score = round(score*100)
+	print(score)
+	emit('message', {'text': message['data']['message'], 'author': username, 'time': ' just now', 'score': score}, room=topic_name)
+	msg = Message(message['data']['message'], uid, username, topic_uid, topic_name, score)
 	db.session.add(msg)
 	db.session.flush()
 	db.session.refresh(msg)
 	db.session.commit()
 
+@socketio.on('banned', namespace='/chat')
+def banned(message):
+	print("ban")
+	print(message)
+	banned_user = User.query.filter_by(email=message['data']['user']).first()
+	room = Topic.query.filter_by(topicname=message['data']['room']).first()
+	banned_user = BannedUser(banned_user.uid, room.uid)
+	banned_user.times_flagged = 500;
+	banFromRoom(banned_user.user_id, room.uid)
+	db.session.add(banned_user)
+	db.session.commit()
+
+@socketio.on('unbanned', namespace='/chat')
+def unbanned(message):
+	print("unban")
+	print(message)
+	unbanned_user = User.query.filter_by(email=message['data']['user']).first()
+	room = Topic.query.filter_by(topicname=message['data']['room']).first()
+	if BannedUser.query.filter_by(user_id=unbanned_user.uid).first() is not None:
+		for u in BannedUser.query.filter_by(user_id=unbanned_user.uid):
+			if u.topic_id == room.uid:
+				emit('unbanned', {'user': unbanned_user.email, 'room': room.topicname}, broadcast=True)
+				db.session.delete(u)
+				db.session.commit()
+
+@socketio.on('flagged', namespace='/chat')
+def flagged(message):
+	room = session.get('room')
+	print(message)
+	flagging_user = session.get('email')
+	flag = message['data']['flag']
+	flagged_user = message['data']['user']
+	if flagging_user != flagged_user:
+		flagged_user = User.query.filter_by(email=message['data']['user']).first()
+		room = Topic.query.filter_by(topicname=room).first()
+		if flag == 'offensive' or flag == 'spam':
+			print('offensive')
+			banned_user = BannedUser(flagged_user.uid, room.uid)
+			if BannedUser.query.filter_by(user_id=flagged_user.uid).first() is None:
+				banned_user.times_flagged = 1
+				db.session.add(banned_user)
+				db.session.commit()
+			# increment num bans
+			else:
+				for p in BannedUser.query.all():
+					print(p.user_id)
+					if p.user_id == flagged_user.uid:
+						if p.topic_id == room.uid:
+							p.times_flagged = p.times_flagged + 1
+							print("flagged: ")
+							print(p.times_flagged)
+							if p.times_flagged >= 5 and p.topic_id != 1:
+								print("banned user from room")
+								banFromRoom(p.user_id, room.uid)
+							db.session.add(p)
+							db.session.commit()
+							return
+				banned_user.times_flagged =1
+				db.session.add(banned_user)
+				db.session.commit()
+
+		# need to track who has flagged so far and banned rooms
+
+def banFromRoom(user_id, room_id):
+	user = User.query.filter_by(uid=user_id).first()
+	room = Topic.query.filter_by(uid=room_id).first()
+	emit('banned', {'user': user.email, 'room': room.topicname}, broadcast=True)
 
 @socketio.on('private_message', namespace='/private_chat')
 def private_message(message):
@@ -686,19 +831,60 @@ def left(message):
 @socketio.on('new_topic', namespace='/chat')
 def new_topic(message):
 	print("New topic\n")
+	user = User.query.filter_by(email=session.get('email')).first()
+	print(user)
 	print(message)
 	print(message['data']['room'])
 	emit('update_topics', {'msg': { 'room': message['data']['room'] }}, broadcast=True)
+	room = Topic(message['data']['room'], user.uid)
+	db.session.add(room)
+	db.session.commit()
+	room = Topic.query.filter_by(topicname=message['data']['room']).first()
+	mod = Moderator(user.uid, room.uid)
+	db.session.add(mod)
+	db.session.commit()
 
+@socketio.on('added_moderator', namespace='/chat')
+def new_topic(message):
+	print("Added")
+	print(message['data']['user'])
+	user = User.query.filter_by(email=message['data']['user']).first()
+	room = Topic.query.filter_by(topicname=session.get('room')).first()
+	mod = Moderator(user.uid, room.uid)
+	db.session.add(mod)
+	db.session.commit()
+
+@socketio.on('removed_moderator', namespace='/chat')
+def new_topic(message):
+	print("Removed")
+	print(message['data']['user'])
+	user = User.query.filter_by(email=message['data']['user']).first()
+	room = Topic.query.filter_by(topicname=session.get('room')).first()
+	for mod in Moderator.query.filter_by(user_id=user.id):
+		if mod.topic_id == room.id:
+			db.session.delete(mod)
+			db.session.commit()
 
 @socketio.on('delete_my_chatroom', namespace='/chat')
 def delete_my_chatroom(message):
 	print("delete_my_chatroom\n")
 	print("This is message ")
 	print(message)
-	id = message['data']['id']
+	topic_id = message['data']['id']
 	parent = message['data']['parent']
-	topic = Topic.query.filter_by(uid=id).delete()
+	topic = Topic.query.filter_by(uid=topic_id).first()
+	print("hi")
+	for room in BannedUser.query.filter_by(topic_id=topic_id):
+		print(room.topic_id)
+		db.session.delete(room)
+	print("do")
+	for mod in Moderator.query.filter_by(topic_id=topic_id):
+		print(mod.topic_id)
+		db.session.delete(mod)
+	for message in Message.query.filter_by(topic_name=topic.topicname):
+		print(message.text)
+		db.session.delete(message)
+	db.session.delete(topic)
 	db.session.commit()
 	emit('delete_my_chatroom', {'msg': parent}, broadcast=True)
 

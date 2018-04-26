@@ -4,6 +4,26 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+class BannedUser(db.Model):
+  id = db.Column(db.Integer, primary_key = True)
+  user_id = db.Column(db.Integer, db.ForeignKey('user.uid'))
+  topic_id = db.Column(db.Integer, db.ForeignKey('topic.uid'))
+  times_flagged = db.Column(db.Integer)
+
+  def __init__(self, user_id, topic_id):
+    self.user_id = user_id
+    self.topic_id = topic_id
+    self.times_flagged = 0
+
+class Moderator(db.Model):
+  id = db.Column(db.Integer, primary_key = True)
+  user_id = db.Column(db.Integer, db.ForeignKey('user.uid'))
+  topic_id = db.Column(db.Integer, db.ForeignKey('topic.uid'))
+
+  def __init__(self, user_id, topic_id):
+    self.user_id = user_id
+    self.topic_id = topic_id
+
 class Language(db.Model):
   uid = db.Column(db.Integer, primary_key=True)
   name = db.Column(db.String(30))
@@ -13,10 +33,22 @@ class Language(db.Model):
     self.name = name
     self.code = code
 
-interests = db.Table('interests',
-        db.Column('user_id', db.Integer, db.ForeignKey('user.uid'), primary_key=True),
-        db.Column('interest_id', db.Integer, db.ForeignKey('interest.uid'), primary_key=True)
-)
+class Cache(db.Model):
+  uid = db.Column(db.Integer, primary_key=True)
+  source_code = db.Column(db.String(3))
+  target_code = db.Column(db.String(3))
+  original_text = db.Column(db.String(4096))
+  translated_text = db.Column(db.String(4096))
+  msg_id = db.Column(db.Integer)
+  match = db.Column(db.Integer)
+
+  def __init__(self, source, target, text, translated, msg_id, match):
+    self.source_code = source
+    self.target_code = target
+    self.original_text = text
+    self.translated_text = translated
+    self.msg_id = msg_id
+    self.match = match
 
 class User(db.Model):
   uid = db.Column(db.Integer, primary_key = True)
@@ -71,13 +103,15 @@ class Message(db.Model):
   user_email = db.Column(db.String(128))
   topic_id = db.Column(db.Integer, db.ForeignKey(Topic.uid))
   topic_name = db.Column(db.String(100))
+  score = db.Column(db.Integer)
 
-  def __init__(self, text, user_id, user_email, topic_id, topic):
+  def __init__(self, text, user_id, user_email, topic_id, topic, score):
     self.text = text
     self.user_id = user_id
     self.user_email = user_email
     self.topic_id = topic_id
     self.topic_name = topic
+    self.score = score
 
 class PrivateMessage(db.Model):
   uid = db.Column(db.Integer, primary_key = True)
