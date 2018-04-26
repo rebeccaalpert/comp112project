@@ -128,7 +128,7 @@
             </div>
             <div class="panel-footer">
               <div class="input-group">
-                <input type="text" class="form-control" placeholder="Enter Message" id="messageText" autofocus/>
+                <input type="text" class="form-control" paceholder="Enter Message" id="messageText" autofocus/>
                 <span class="input-group-btn">
                   <button class="btn btn-info" type="button" id="sendMessage">SEND <span class="glyphicon glyphicon-send"></span></button>
                 </span>
@@ -343,6 +343,28 @@
         li.children(".glyphicon-chevron-up").addClass("hidden");
         li.addClass("down");
       }
+    });
+
+    $('#messageText').on('input', function() {
+      var my_text = $('#messageText').val();
+      $.ajax({
+        url:"https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=AIzaSyAj5W2revGlFYriELZLCAXa5RvyA8FMUUA",
+        type:"POST",
+        data:'{comment: {text: "' + my_text + '"},languages: ["en"], requestedAttributes: {TOXICITY:{}}}',
+        contentType:"application/json; charset=utf-8",
+        dataType:"json",
+        success: function(data){
+          var score = data['attributeScores']['TOXICITY']['spanScores'][0]['score']['value'];
+          console.log(score * 100);
+          if (score * 100 >= 60) {
+            if ($("#feedback").length == 0) {
+              $(".panel-footer").append("<div id='feedback' class='alert alert-danger margin-top no-margin-bottom'>Your comment is inappropriate and will be hidden if you post it.</div>")
+            }
+          } else {
+            $("#feedback").remove();
+          }
+        }
+      })
     });
 
    function addFlagClick(e) {
