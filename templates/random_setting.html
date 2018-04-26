@@ -58,6 +58,9 @@
       {% endif %}
     </p>
     <button class="btn btn-info" type="button" id="findPartner">Find New Partner</button>
+
+    </br></br>
+    <button class="btn btn-info" type="button" id="findGroup">Find New Interest Group</button>
 </div>
 
 <script>
@@ -67,11 +70,14 @@
 
     $("#findPartner").on("click", function () {
       $(".loader").css("visibility", "visible");
-      findNewPartner();
+      socket.emit('new_random', 
+        { data: { message: "finding new partner" } });
     });
 
-    socket.on('new_random', function(data) {
-      console.log(data);
+    $("#findGroup").on("click", function () {
+      $(".loader").css("visibility", "visible");
+      socket.emit('new_interest_group', 
+        { data: { message: "finding new interest group" } });
     });
 
     socket.on('redirect', function(destination) {
@@ -82,11 +88,6 @@
       window.location.replace("/random_setting");
       delete_interest($('#' + data['msg']));
     });
-
-    function findNewPartner() {
-      socket.emit('new_random', 
-        { data: { message: "finding new partner" } });
-    }
 
     remove_interest = function(elem) {
         id = $(elem).attr('id');;
