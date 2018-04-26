@@ -13,6 +13,11 @@ class Language(db.Model):
     self.name = name
     self.code = code
 
+interests = db.Table('interests',
+        db.Column('user_id', db.Integer, db.ForeignKey('user.uid'), primary_key=True),
+        db.Column('interest_id', db.Integer, db.ForeignKey('interest.uid'), primary_key=True)
+)
+
 class User(db.Model):
   uid = db.Column(db.Integer, primary_key = True)
   firstname = db.Column(db.String(100))
@@ -21,7 +26,9 @@ class User(db.Model):
   pwdhash = db.Column(db.String(128))
   topics = db.relationship('Topic', backref='User', lazy='dynamic')
   messages = db.relationship('Message', backref='User', lazy='dynamic')
+  interests = db.relationship('Interest', backref='User', cascade="all, delete-orphan", lazy='dynamic')
   topic_name = db.Column(db.String(100))
+  random = db.Column(db.String(120))
   lang = db.Column(db.Integer, db.ForeignKey(Language.uid))
   
   def __init__(self, firstname, lastname, email, password, topics, messages, lang):
@@ -29,6 +36,7 @@ class User(db.Model):
     self.lastname = lastname.title()
     self.lang = lang
     self.email = email.lower()
+    self.random = ""
     self.set_password(password)
     
   def set_password(self, password):
@@ -36,6 +44,14 @@ class User(db.Model):
   
   def check_password(self, password):
     return check_password_hash(self.pwdhash, password)
+
+class Interest(db.Model):
+  uid = db.Column(db.Integer, primary_key = True)
+  interest_name = db.Column(db.String(100))
+  user_id = db.Column(db.Integer, db.ForeignKey(User.uid))
+
+  def __init__(self, name):
+    self.interest_name = name
 
 class Topic(db.Model):
   uid = db.Column(db.Integer, primary_key = True)
@@ -64,6 +80,22 @@ class Message(db.Model):
     self.topic_name = topic
 
 class PrivateMessage(db.Model):
+  uid = db.Column(db.Integer, primary_key = True)
+  text = db.Column(db.String(4096))
+  posted = db.Column(db.DateTime, default = datetime.now)
+  sender_id = db.Column(db.Integer, db.ForeignKey(User.uid))
+  sender_email = db.Column(db.String(128))
+  receiver_id = db.Column(db.Integer, db.ForeignKey(User.uid))
+  receiver_email = db.Column(db.String(128))
+
+  def __init__(self, text, sender_id, sender_email, receiver_id, receiver_email):
+    self.text = text
+    self.sender_id = sender_id
+    self.sender_email = sender_email
+    self.receiver_id = receiver_id
+    self.receiver_email = receiver_email
+
+class RandomMessage(db.Model):
   uid = db.Column(db.Integer, primary_key = True)
   text = db.Column(db.String(4096))
   posted = db.Column(db.DateTime, default = datetime.now)

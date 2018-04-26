@@ -1,0 +1,146 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="col-md-3">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong><span class="glyphicon glyphicon-list"></span> Logged in as: <span id="user-name">{{ session['email'] }}</strong>
+            </div>
+          </div>
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong>Random Chat Information</strong>
+            </div>
+            <div class="container-fluid">
+              <div><strong>Your Interests: </strong></div>
+                {% for interest in user.interests %}
+                  <li class="message">{{ interest.interest_name }}</li>
+                {% endfor %}
+              <div><strong>Your Random Partner: </strong></div>
+                  <p>
+                    {% if user.random == "" %}
+                      None
+                    {% else %}
+                      {{ user.random }}
+                    {% endif %}
+                  </p>
+              <a href="/random_setting" class="btn btn-info" role="button" id="change_setting">Change Settings</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-9">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <strong><span class="glyphicon glyphicon-list"></span> Chatting with random partner: <span id="chatroom-name">{{ session['random'] }}</strong>
+              <span id="room-id">{{ session['room'] }}
+            </div>
+            <div class="panel-body fixed-panel">
+              <ul class="media-list" id="chat">
+                {% for message in messages %}
+                  {% if (message.sender_email == session['random'] and 
+                      message.receiver_email == session['email'])
+                      or (message.sender_email == session['email'] and 
+                      message.receiver_email == session['random']) %}
+                    <li class="message">{{ message.text }}<br />posted by {{ message.sender_email }} at {{ message.posted }}</li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            <div class="panel-footer">
+              <div class="input-group">
+                <input type="text" class="form-control" placeholder="Enter Message" id="messageText" autofocus/>
+                <span class="input-group-btn">
+                  <button class="btn btn-info" type="button" id="sendMessage">SEND <span class="glyphicon glyphicon-send"></span></button>
+                </span>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+  $(document).ready(function() {
+    $('#submit').addClass('btn').addClass('btn-info').css('margin-top', '1em');
+    $('#topicname').addClass('form-control');
+    var channel = "/random_chat";
+    var socket = io.connect('http://' + document.domain + ':' + location.port + channel);
+    var receivedMsg;
+
+    var room = $("#room-id").text();
+
+    $("#room-id").hide();
+
+    $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
+
+    $("#change_setting").on("click", function () {
+      socket.emit('random_left', {});
+    });
+
+    $("#navitems").on("click", function () {
+      socket.emit('random_left', {});
+    });
+
+    $(".navbar-brand").on("click", function () {
+      socket.emit('random_left', {});
+    });
+
+    socket.on('connect', function () {
+      socket.emit('random_joined', { data: { room: room } });
+    });
+
+    socket.on('random_status', function(data) {
+      console.log(data);
+      $('#chat').append('<li class="message">' + data.msg + '\n');
+      $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
+    });
+    
+    socket.on('random_message', function(data) {
+      console.log(data);
+      $('#chat').append('<li class="message">' + data.text + '<br />' + 'posted by ' + data.author + data.time + '</li>');
+      $("#chat").animate({ scrollTop: $("#chat").prop("scrollHeight") - $('#chat').height() }, 100);
+    });
+
+    socket.on('update_topics', function(data) {
+      $('#chat-rooms').append('<li class="topic"><a href="/chat/' + titleCase(data.msg.room) + '">' + titleCase(data.msg.room) + '</a></li>');
+    });
+    
+    $('#messageText').keypress(function(e) {
+      var code = e.keyCode || e.which;
+      if (code == 13) {
+        text = $('#messageText').val();
+        sendMessage();
+        $('#messageText').val('');
+      }
+    });
+
+    $("#sendMessage").on("click", function () {
+        sendMessage();
+    });
+
+    function clearMessages() {
+      $('.media-list li').detach();
+    }
+
+    function sendMessage() {
+      $container = $('.media-list');
+      $container[0].scrollTop = $container[0].scrollHeight;
+      var text = $("#messageText").val();
+      socket.emit('random_message', { data: { message: text } });
+      $("#messageText").val("");
+    }
+
+    function titleCase(str) {
+      str = str.toLowerCase().split(' ');
+      for (var i = 0; i < str.length; i++) {
+        str[i] = str[i].charAt(0).toUpperCase() + str[i].slice(1); 
+      }
+      return str.join(' ');
+    }
+  });
+  
+</script>
+
+{% endblock %}

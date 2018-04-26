@@ -4,17 +4,20 @@ monkey.patch_all()
 from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import render_template, request, flash, session, url_for, redirect
-from forms import SignupForm, SigninForm, TopicForm, ProfileForm
-from models import db, User, Topic, Message, PrivateMessage, Language
+from forms import SignupForm, SigninForm, TopicForm, ProfileForm, RandomForm
+from models import db, User, Topic, Message, PrivateMessage, Language, Interest, RandomMessage
 from sqlalchemy import update
 import datetime
 import math
+from heapq import heappush, heappop
+import time
 
 app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'nuttertools'
 socketio = SocketIO(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/development'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/development'
+active_list = set()
 
 db.init_app(app)
 
@@ -329,7 +332,7 @@ def private_chat(username):
 	else:
 		if request.method == 'POST':
 			if form.validate() == False:
-				return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=chat_partner.email)
+				return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=username)
 			else:
 				uid = user.uid
 				newtopic = Topic(form.topicname.data, uid)
@@ -339,7 +342,54 @@ def private_chat(username):
 				return redirect('/chat/' + newtopic.topicname)
 		
 		if request.method == 'GET':
-			return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=chat_partner.email)
+			return render_template('private.html', form=form, topics=topics, users=users, messages=messages, private=username)
+
+@app.route('/random')
+def random():
+    form = TopicForm()
+    users = User.query.all()
+    messages = RandomMessage.query.all()
+
+    if 'email' not in session:
+        return redirect(url_for('signin'))
+
+    user = User.query.filter_by(email = session['email']).first()
+    if user is None:
+        return redirect(url_for('signin'))
+
+    if user.random is "":
+        return redirect(url_for('random_setting'))
+
+    session['room'] = convertToNumber(user.random+"random") + convertToNumber(session['email']+"random")
+    session['random'] = user.random
+    
+    return render_template('random.html', form=form, user=user, messages=messages)
+
+@app.route('/random_setting', methods=['GET', 'POST'])
+def random_setting():
+    allUsers = User.query.all()
+    user = User.query.filter_by(email = session['email']).first()
+
+    if user is None:
+        return redirect(url_for('signin'))
+
+    form = RandomForm()
+    session['room'] = 'General'
+
+    if 'email' not in session:
+        return redirect(url_for('signin'))
+    
+    if request.method == 'POST':
+        if form.validate() == False:
+            return render_template('random_setting.html', form=form, user=user, allUsers=allUsers)
+        else:
+            user.interests.append(Interest(form.interest.data))
+            db.session.commit()
+            return redirect(url_for('random_setting'))
+    
+    if request.method == 'GET':
+        return render_template('random_setting.html', form=form, user=user, allUsers=allUsers)
+
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
@@ -461,6 +511,16 @@ def joined(message):
 	print('has joined')
 	emit('private_status', {'msg': session.get('email') + ' is connected.'}, room=room)
 
+@socketio.on('random_joined', namespace='/random_chat')
+def joined(message):
+    print('message =', message)
+    room = message['data']['room']
+    session['room'] = room
+    join_room(room)
+    print(session.get('email'))
+    print('has joined')
+    emit('random_status', {'msg': session.get('email') + ' is connected.'}, room=room)
+
 @socketio.on('message', namespace='/chat')
 def chat_message(message):
 	print("message = ", message)
@@ -498,6 +558,97 @@ def private_message(message):
 	db.session.add(message)
 	db.session.commit()
 
+@socketio.on('random_message', namespace='/random_chat')
+def random_message(message):
+    print("message = ", message)
+    print(message['data']['message'])
+    email = session.get('email')
+    room = session.get('room')
+    receiver_email = session.get('random')
+    emit('random_message', {'text': message['data']['message'], 'author': email, 'time': ' just now'}, room=room)
+    sender = User.query.filter_by(email=email).first()
+    sender_id = sender.uid
+    sender_email = sender.email
+    receiver = User.query.filter_by(email=receiver_email).first()
+    receiver_id = receiver.uid
+    message = RandomMessage(message['data']['message'], sender_id, sender_email, receiver_id, receiver_email)
+    db.session.add(message)
+    db.session.commit()
+
+@socketio.on('new_random', namespace='/random_chat')
+def new_random(message):
+    # add email to active_list
+    # loop: max 3 tries, 5 sec wait
+        # check if user is on the list. If not, means user already matched, break.
+        # get other users who's also in session
+        # search for partner, add to same_interests
+        # if not found, do it again
+        # if found, check if user is already matched. 
+            # check if partner is still active
+    # remove email from active_list
+
+    print("message = ", message)
+    print(message['data']['message'])
+    myEmail = session.get('email')
+    active_list.add(myEmail)
+    user = User.query.filter_by(email=myEmail).first()
+    others = User.query.filter(User.email != myEmail).all()
+    interests = user.interests
+    interests_set = set()
+    for i in interests:
+        interests_set.add(i.interest_name.lower())
+
+    # list of other users who have same interests as you do, and
+    # how many same interets they have. 
+    same_interests = []
+
+    # search for same interests
+    tries = 5
+    partner_email = ""
+    # the loop
+    while tries > 0:
+        print ("in loop")
+        print (active_list)
+        if myEmail not in active_list:
+            break
+        for other in others:
+            if other.email in active_list:
+                count = 0
+                for i in other.interests:
+                    print(other.email + " " + i.interest_name)
+                    if i.interest_name.lower() in interests_set:
+                        count = count - 1
+                if count != 0:
+                    heappush(same_interests, (count, other.email))
+        if len(same_interests) != 0 and myEmail in active_list:
+            while len(same_interests) != 0:
+                other_email = heappop(same_interests)[1]
+                if other_email in active_list:
+                    active_list.remove(other_email)
+                    active_list.remove(myEmail)
+                    partner_email = other_email
+                    break
+            if partner_email != "":
+                new_partner = User.query.filter_by(email=partner_email).first()
+                old_of_new_partner = User.query.filter_by(random=partner_email).first()
+                if old_of_new_partner != None and old_of_new_partner != user:
+                    old_of_new_partner.random = ""
+                old_partner = User.query.filter_by(random=myEmail).first()
+                if old_partner != None and old_partner != new_partner:
+                    old_partner.random = ""
+                new_partner.random = myEmail
+                user.random = partner_email
+                db.session.commit()
+                break
+        # next loop
+        tries -= 1
+        time.sleep(2)
+    # loop ends
+    print ("loop ends")
+
+    emit('new_random', {'partner': partner_email})
+    emit('redirect', '/random_setting')
+
 @socketio.on('left', namespace='/chat')
 def left(message):
     room = session.get('room')
@@ -519,6 +670,15 @@ def left(message):
     emit('private_status', {'msg': session.get('email') + ' is offline.'}, room=room)
     session.pop('room', None)
 
+@socketio.on('random_left', namespace='/random_chat')
+def left(message):
+    room = session.get('room')
+    leave_room(room)
+    print(session.get('email'))
+    print('left room')
+    emit('random_status', {'msg': session.get('email') + ' is offline.'}, room=room)
+    session.pop('room', None)
+
 @socketio.on('new_topic', namespace='/chat')
 def new_topic(message):
 	print("New topic\n")
@@ -537,6 +697,16 @@ def delete_my_chatroom(message):
 	topic = Topic.query.filter_by(uid=id).delete()
 	db.session.commit()
 	emit('delete_my_chatroom', {'msg': parent}, broadcast=True)
+
+@socketio.on('delete_interest', namespace='/random_chat')
+def delete_interest(message):
+    print("delete_interest\n")
+    id = message['data']['id']
+    interest = Interest.query.get(id)
+    user = User.query.filter_by(email=session.get('email')).first()
+    user.interests.remove(interest)
+    db.session.commit()
+    emit('delete_interest', {'msg': id}, broadcast=True)
 
 if __name__ == '__main__':
 	socketio.run(app)

@@ -42,6 +42,19 @@ class SignupForm(Form):
     else:
       return True
 
+class RandomForm(Form):
+  interest = TextField("Enter a new interest", [validators.Required("Please enter an interest.")])
+  submit = SubmitField("Submit Interest")
+
+  def __init__(self, *args, **kwargs):
+    Form.__init__(self, *args, **kwargs)
+
+  def validate(self):
+    if not Form.validate(self):
+      return False
+    else:
+      return True
+
 class ProfileForm(Form):
   firstname = TextField("First name", [validators.Required("Please enter your first name.")])
   lastname = TextField("Last name",  [validators.Required("Please enter your last name.")])

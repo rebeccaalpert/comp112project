@@ -106,6 +106,7 @@
           <ul class="nav navbar-nav">
             {% if 'email' in session %}
             <li><a href="{{ url_for('chat') }}">Chat</a></li>
+            <li><a href="{{ url_for('random') }}">Random Chat</a></li>
             <li><a href="{{ url_for('profile') }}">Profile</a></li>
             <li><a href="{{ url_for('signout') }}">Sign Out</a></li>
             {% else %}

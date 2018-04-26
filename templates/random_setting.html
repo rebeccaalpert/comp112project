@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+  .loader {
+    visibility: hidden;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -20px;
+    margin-left: -75px;
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #3498db;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+</style>
+
+<div class="loader"></div>
+<div class="container content">
+  <h2>Random Chat Settings</h2>
+    {% for message in form.interest.errors %}
+      <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
+    
+    <strong><p>Your Interests</p></strong>
+    <p>
+      {% for interest in user.interests %}
+        <li class="info">
+          {{ interest.interest_name }}
+          <span id="{{interest.uid}}" class="remove_interest_btn" onclick="remove_interest(this)"><span class="glyphicon glyphicon-remove-sign" style="padding-left: 10px;"></span></span>
+        </li>
+      {% endfor %}
+    </p>
+
+    <form action="{{ url_for('random_setting') }}" method=post>
+      {{ form.hidden_tag() }}
+      {{ form.interest.label }}
+      {{ form.interest() }}
+      {{ form.submit }}
+    </form>
+
+    </br>
+
+    <strong><p>Your Random Chat Partner</p></strong>
+    <p>
+      {% if user.random == "" %}
+        None
+      {% else %}
+        {{ user.random }}
+      {% endif %}
+    </p>
+    <button class="btn btn-info" type="button" id="findPartner">Find New Partner</button>
+</div>
+
+<script>
+  $(document).ready(function() {
+    var channel = "/random_chat";
+    var socket = io.connect('http://' + document.domain + ':' + location.port + channel);
+
+    $("#findPartner").on("click", function () {
+      $(".loader").css("visibility", "visible");
+      findNewPartner();
+    });
+
+    socket.on('new_random', function(data) {
+      console.log(data);
+    });
+
+    socket.on('redirect', function(destination) {
+      window.location.href = destination;
+    });
+
+    socket.on('delete_interest', function(data) {
+      window.location.replace("/random_setting");
+      delete_interest($('#' + data['msg']));
+    });
+
+    function findNewPartner() {
+      socket.emit('new_random', 
+        { data: { message: "finding new partner" } });
+    }
+
+    remove_interest = function(elem) {
+        id = $(elem).attr('id');;
+        console.log("id: " + id);
+        socket.emit('delete_interest', { data: { id: id } });
+    }
+
+    delete_interest = function(id) {
+      if(id) {
+        console.log("exists");
+        id.remove();
+      }
+      console.log("does not exist");
+    }
+  });
+</script>
+
+{% endblock %}
