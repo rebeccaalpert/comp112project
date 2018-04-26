@@ -638,6 +638,10 @@ def new_random(message):
                     old_partner.random = ""
                 new_partner.random = myEmail
                 user.random = partner_email
+                RandomMessage.query.filter_by(sender_email=myEmail).delete()
+                RandomMessage.query.filter_by(receiver_email=myEmail).delete()
+                RandomMessage.query.filter_by(sender_email=partner_email).delete()
+                RandomMessage.query.filter_by(sender_email=partner_email).delete()
                 db.session.commit()
                 break
         # next loop
