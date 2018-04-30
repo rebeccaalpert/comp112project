@@ -14,7 +14,11 @@
     <!-- {% for message in form.password.errors %}
       <div class="alert alert-danger">{{ message }}</div>
     {% endfor %} -->
-    
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <strong><span class="glyphicon glyphicon-list"></span> Logged in as: <span id="user-name">{{ session['username'] }}</strong>
+      </div>
+    </div>
     <form action="{{ url_for('profile') }}" method=post>
       {{ form.hidden_tag() }}
       

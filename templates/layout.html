@@ -139,6 +139,17 @@
       $('#submit').addClass('btn').addClass('btn-info').css('margin-top', '1em');
       $('input').addClass('form-control');
       $('label').css('margin-top', '1em');
+      var main_channel = "/";
+      var main_socket = io.connect('http://' + document.domain + ':' + location.port + main_channel);
+      main_socket.on('alert', function(data) {
+        console.log("This is broadcast alert")
+        console.log(data);
+        if (data['users'].indexOf($("#user-name").text()) != -1) {
+          var alert = '<div class="alert alert-info" role="alert">' +
+          'New interest chat room ' + '<a href="' + '/chat/' +data['topic'] + '" class="alert-link">' + data['topic'] + '</a> is available! Click on the link to go to chat.' + '</div>';
+          $('#alert-div').append(alert);
+        }
+      });
     });   
   </script>
   </head>
@@ -171,6 +182,8 @@
         </div>
       </div>
     </nav>
+    <div id="alert-div">
+    </div>
   </header>
 
   {% block content %}

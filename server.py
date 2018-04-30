@@ -883,20 +883,25 @@ def new_interest_group(message):
         interests_set.add(i.interest_name.lower())
 
     same_interests = []
+    interest_to_users = {}
 
     topic_name = ""
 
     for i in interests_set:
         count = 0
+        friends = []
         for other in others:
             for other_i in other.interests:
                 if other_i.interest_name.lower() == i:
                     count += 1;
+                    friends.append(other.username)
         if count > 0:
             heappush(same_interests, (-count, i))
+            interest_to_users[i] = friends
 
     print(same_interests)
 
+    interest = ""
     while len(same_interests) > 0:
         interest = heappop(same_interests)[1]
         print("interest" + interest)
@@ -912,11 +917,12 @@ def new_interest_group(message):
         db.session.commit()
         break
 
+
     if topic_name == "":
         emit('redirect', '/random_setting')
     else:
         emit('redirect', '/chat/' + room.topicname)
-
+        emit('alert', {'topic': room.topicname, 'users': json.dumps(interest_to_users[interest])}, namespace='/', broadcast=True)
 
 @socketio.on('left', namespace='/chat')
 def left(message):
