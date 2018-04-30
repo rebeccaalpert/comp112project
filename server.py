@@ -792,8 +792,8 @@ def new_random(message):
                 old_partner = User.query.filter_by(random=myEmail).first()
                 if old_partner != None and old_partner != new_partner:
                     old_partner.random = ""
-                new_partner.random = myEmail
-                user.random = partner_email
+                new_partner.random = user.username
+                user.random = new_partner.username
                 RandomMessage.query.filter_by(sender_email=myEmail).delete()
                 RandomMessage.query.filter_by(receiver_email=myEmail).delete()
                 RandomMessage.query.filter_by(sender_email=partner_email).delete()
@@ -809,6 +809,66 @@ def new_random(message):
     emit('new_random', {'partner': partner_email})
     emit('redirect', '/random_setting')
 
+@socketio.on('best_random', namespace='/random_chat')
+def best_random(message):
+    print("message = ", message)
+    print(message['data']['message'])
+    myEmail = session.get('email')
+    user = User.query.filter_by(email=myEmail).first()
+    others = User.query.filter(User.email != myEmail).all()
+    interests = user.interests
+    interests_set = set()
+    for i in interests:
+        interests_set.add(i.interest_name.lower())
+
+    # list of other users who have same interests as you do, and
+    # how many same interets they have. 
+    same_interests = []
+
+    # wait 10 seconds for others to join
+    time.sleep(10)
+    
+    active_list.add(myEmail)
+    # search for same interests
+    partner_email = ""
+    if myEmail in active_list:
+	    for other in others:
+	        if other.email in active_list:
+	            count = 0
+	            for i in other.interests:
+	                print(other.email + " " + i.interest_name)
+	                if i.interest_name.lower() in interests_set:
+	                    count = count - 1
+	            if count != 0:
+	                heappush(same_interests, (count, other.email))
+	    if len(same_interests) != 0 and myEmail in active_list:
+	        while len(same_interests) != 0:
+	            other_email = heappop(same_interests)[1]
+	            if other_email in active_list:
+	                active_list.remove(other_email)
+	                active_list.remove(myEmail)
+	                partner_email = other_email
+	                break
+	        if partner_email != "":
+	            new_partner = User.query.filter_by(email=partner_email).first()
+	            old_of_new_partner = User.query.filter_by(random=partner_email).first()
+	            if old_of_new_partner != None and old_of_new_partner != user:
+	                old_of_new_partner.random = ""
+	            old_partner = User.query.filter_by(random=myEmail).first()
+	            if old_partner != None and old_partner != new_partner:
+	                old_partner.random = ""
+	            new_partner.random = user.username
+	            user.random = new_partner.username
+	            RandomMessage.query.filter_by(sender_email=myEmail).delete()
+	            RandomMessage.query.filter_by(receiver_email=myEmail).delete()
+	            RandomMessage.query.filter_by(sender_email=partner_email).delete()
+	            RandomMessage.query.filter_by(sender_email=partner_email).delete()
+	            db.session.commit()
+
+    emit('new_random', {'partner': partner_email})
+    emit('redirect', '/random_setting')
+
+
 @socketio.on('new_interest_group', namespace='/random_chat')
 def new_interest_group(message):
     print("message = ", message)
@@ -819,6 +879,7 @@ def new_interest_group(message):
     interests = user.interests
     interests_set = set()
     for i in interests:
+        print (i.interest_name)
         interests_set.add(i.interest_name.lower())
 
     same_interests = []
@@ -831,14 +892,14 @@ def new_interest_group(message):
             for other_i in other.interests:
                 if other_i.interest_name.lower() == i:
                     count += 1;
-        if count > 1:
+        if count > 0:
             heappush(same_interests, (-count, i))
 
     print(same_interests)
 
     while len(same_interests) > 0:
         interest = heappop(same_interests)[1]
-        print(interest)
+        print("interest" + interest)
         if Topic.query.filter_by(topicname=interest).first() != None:
             continue
         topic_name = interest

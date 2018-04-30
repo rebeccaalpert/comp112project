@@ -57,8 +57,9 @@
         {{ user.random }}
       {% endif %}
     </p>
-    <button class="btn btn-info" type="button" id="findPartner">Find New Partner</button>
-
+    <button class="btn btn-info" type="button" id="findPartner">Quick Find Random Partner</button>
+    </br></br>
+    <button class="btn btn-info" type="button" id="findBestPartner">Find Best Random Partner</button>
     </br></br>
     <button class="btn btn-info" type="button" id="findGroup">Find New Interest Group</button>
 </div>
@@ -72,6 +73,12 @@
       $(".loader").css("visibility", "visible");
       socket.emit('new_random', 
         { data: { message: "finding new partner" } });
+    });
+
+    $("#findBestPartner").on("click", function () {
+      $(".loader").css("visibility", "visible");
+      socket.emit('best_random', 
+        { data: { message: "finding best partner" } });
     });
 
     $("#findGroup").on("click", function () {
