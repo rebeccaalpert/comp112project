@@ -31,7 +31,7 @@ requests==2.18.4
 six==1.11.0
 SQLAlchemy==1.2.5
 stevedore==1.27.1
-urllib3==1.22
+urllib3==1.26.5
 virtualenv==15.1.0
 virtualenv-clone==0.2.6
 virtualenvwrapper==4.8.2
